@@ -16,6 +16,13 @@
 #include <dt-bindings/clock/rv1106-cru.h>
 #include "clk.h"
 
+/* PORT(6.18): Rockchip downstream-only frac-divider flag; mainline has no
+ * min/max-limit opt-out, so map to 0 (default limit). PORT-VERIFY: UART frac
+ * baud accuracy on the 6 clk_uart*_frac clocks. */
+#ifndef CLK_FRAC_DIVIDER_NO_LIMIT
+#define CLK_FRAC_DIVIDER_NO_LIMIT 0
+#endif
+
 #define CRU_PVTPLL0_CON0_L		0x11000
 #define CRU_PVTPLL0_CON0_H		0x11004
 #define CRU_PVTPLL0_CON1_L		0x11008

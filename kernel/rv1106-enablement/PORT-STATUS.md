@@ -10,8 +10,9 @@ from the **vendor 5.10.160** tree, no plan44 code, built with our
 - rv1106's siblings **rv1126/rv1108 exist in both trees**, so their 5.10→6.18 delta is a
   working template for the framework API changes.
 
-## M1 — clock driver (`clk-rv1106.c`, 1284 lines): IN PROGRESS
-Build-fix loop against 6.18. Fixed so far (captured in `clk/`):
+## M1 — clock driver (`clk-rv1106.c`, 1294 lines): ✅ COMPILES CLEAN on 6.18
+Build-fix loop against 6.18 — `clk-rv1106.o` (85732 bytes) builds with no errors.
+Fixed (captured in `clk/`):
 1. **Kconfig + Makefile hooks** — added `CONFIG_CLK_RV1106` (mirrors CLK_RV1126).
 2. **CRU register macros** — ported all 55 `RV1106_*` register-accessor `#define`s from the
    vendor `clk.h` into 6.18's `clk.h` (mainline has none).
@@ -26,10 +27,12 @@ Build-fix loop against 6.18. Fixed so far (captured in `clk/`):
    checked against the RV1106 `CORECLKSEL_CON` register map (TRM) and validated on hardware
    before trusting a boot. A wrong mux silently breaks boot.
 
-**Next frontier:** `clk-rv1106.c:427` — `CLK_FRAC_DIVIDER_NO_LIMIT`, a Rockchip
-downstream-only fractional-divider flag absent from mainline 6.18; needs mapping to the
-mainline frac-divider behavior (likely define-as-0 if mainline defaults to no-limit, but
-verify the divider min/max semantics).
+5. **`CLK_FRAC_DIVIDER_NO_LIMIT`** — Rockchip downstream-only frac-divider flag (6 uses on
+   the UART frac clocks); mainline has no min/max opt-out, mapped to 0 (default limit).
+   **⚠ PORT-VERIFY**: UART fractional baud accuracy.
+
+**Next:** the other core bring-up components (pinctrl, mach/timer, DT, defconfig) — being
+surveyed breadth-first in parallel to surface all their deltas before porting.
 
 ## Honest scope
 This is the first driver of ~120 in the RV1106 BSP. The clk port alone is a multi-cycle
