@@ -31,8 +31,34 @@ Fixed (captured in `clk/`):
    the UART frac clocks); mainline has no min/max opt-out, mapped to 0 (default limit).
    **⚠ PORT-VERIFY**: UART fractional baud accuracy.
 
-**Next:** the other core bring-up components (pinctrl, mach/timer, DT, defconfig) — being
-surveyed breadth-first in parallel to surface all their deltas before porting.
+## M1 — pinctrl (`pinctrl-rockchip.c/.h`): ✅ COMPILES CLEAN on 6.18
+`pinctrl-rockchip.o` (173688 bytes) builds no-errors. Transplanted from vendor 5.10 (effort S,
+zero API drift — the survey's assessment held): added `RV1106` to the type enum; a 159-line
+block of `RV1106_DRV/PULL/SMT_*` macros + 3 `rv1106_calc_*_reg_and_bit()` functions; `case
+RV1106:` in the 3 pull functions + the RK3568 drive-strength group; `rv1106_pin_banks[]` +
+`rv1106_pin_ctrl`; and the `rockchip,rv1106-pinctrl` of_device_id (dropping the vendor's
+`#ifdef CONFIG_CPU_RV1106` guard — mainline compiles all SoCs unconditionally). Captured as
+`pinctrl/0001-rv1106-pinctrl.patch`.
+- **PORT-VERIFY RESOLVED (iomux offsets):** the DRV/PULL/SMT per-bank offsets are confirmed by
+  a THIRD independent source — the upstream Simon Glass v3 pinctrl patch. Its
+  `rv1106_{drv,pull,smt}_offsets[]` match ours exactly once the 0x10000-strided per-bank IOC
+  base is applied (e.g. vendor GPIO2 DRV `0x100C0` = `0x10000 + 0xc0`). Retires the "do not
+  guess" iomux risk without hardware. (Note upstream uses per-bank IOC regmaps + low offsets;
+  we use the vendor's full-offset form — same absolute register, both compile.)
+- **Still PORT-VERIFY:** GPIO4 bank pin-count (`pin_banks` says 24, DT `gpio-ranges` says 32) —
+  carried from vendor unchanged; needs TRM/hardware.
+
+## M1 — mach + defconfig: NEXT
+Per the breadth survey's integration order: mach is a ~2-line DT-compat add to `rockchip.c`
+(do NOT recreate the dropped `CPU_RV1106` symbol); then the minimal M2 defconfig; then the DT
+(SoC nodes transplant + board-specific PORT-VERIFY: console UART, boot media, panel timings);
+then the first full kernel build toward an earlycon boot.
+
+## Upstream tracking (decision 2026-08-23)
+Base stays the vendor forward-port (applies to 6.18; we control it). The unmerged upstream
+RV1106 series (~35 patches, "New" state, does NOT apply cleanly to 6.18 — pinctrl v3 failed at
+`pinctrl-rockchip.c:3390`) is used as a **correctness oracle** for boot-critical PORT-VERIFY
+values (already retired the iomux offsets) and tracked for eventual convergence when it merges.
 
 ## Honest scope
 This is the first driver of ~120 in the RV1106 BSP. The clk port alone is a multi-cycle
