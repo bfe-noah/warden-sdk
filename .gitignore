@@ -1,0 +1,9 @@
+# Rust
+target/
+**/target/
+Cargo.lock
+
+# scratch / editor
+*.swp
+*~
+.DS_Store
