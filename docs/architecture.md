@@ -60,7 +60,7 @@ supervisor logic runs in CI with no panel.
   let the boot-loaded-watchdog logic be validated before the flash that bricked a
   bench unit (though the *layout* fault — a load address in unreserved kernel RAM —
   is a target-config check, §5, not a sim property).
-- **Next:** a **CRU reset-ladder** model on `MemBus` (so `flared::devmem::hard_reset`'s
+- **`cru` — reset ladder.** Done. `CruSim` on `MemBus` (so `flared::devmem::hard_reset`'s
   ladder is host-tested against the known glb_srst_fst / DW-watchdog registers); an
   **NPU** load model behind the path seam; a **GPIO/relay** sysfs model; a **modbus
   device** model unifying the existing `mbsim.py` corpus into the same framework;
