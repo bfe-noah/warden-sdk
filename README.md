@@ -83,7 +83,7 @@ patches/    the vendor-SDK delta (mirrors flare-edge/sdk-patches until it moves 
 build/      the hermetic image-build wrapper (kernel → rootfs → image), incremental.
 ci/         CI: patches-still-apply, host tests, coverage, benchmarks.
 docs/       architecture + ADRs (decisions/).
-tools/      dev tooling.
+tools/      dev tooling. config-lint: static target-config gates (MCU-load-vs-reserved-memory — the 0x40000 brick class).
 ```
 
 ## Principles
