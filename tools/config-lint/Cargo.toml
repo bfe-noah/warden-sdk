@@ -1,0 +1,14 @@
+[package]
+name = "warden-config-lint"
+version = "0.1.0"
+edition = "2021"
+description = "Static target-config checks for WardenOS: catch memory-map faults (the 0x40000 MCU-load brick class) and other flash-time config mistakes before a flash, not on the bench."
+license = "MIT OR Apache-2.0"
+
+[[bin]]
+name = "config-lint"
+path = "src/main.rs"
+
+[lib]
+name = "warden_config_lint"
+path = "src/lib.rs"

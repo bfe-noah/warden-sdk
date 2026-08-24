@@ -106,6 +106,16 @@ node." warden-sdk owns these config-lint checks (idblock loader `.ini` vs DT
 reservations, partition table vs image sizes, vermagic vs kernel) as CI gates, so a
 mistake is caught before a flash rather than on the bench.
 
+**Built:** `tools/config-lint` implements the first and most important of these —
+the MCU-load-vs-`reserved-memory` gate. It parses the rkbin loader `.ini` for
+every `LOADERn=Hpmcu` firmware and its `[LOADERn_PARAM] LOAD_ADDR`, parses the
+target devicetree (`.dts`, or `dtc -I dtb` output in CI) for `reserved-memory`
+ranges, and fails if any MCU load lands outside a reservation. Its test suite
+encodes the c8a3 brick itself: the real Thunder-Boot `.ini` (Hpmcu @ `0x40000`)
+fails against a DT with no `rtos@40000` node and passes once the reservation is
+added. **Next** target-config checks: partition-table-vs-image-size and
+vermagic-vs-kernel.
+
 ## 6. Kernel forward-port (separate, bounded phase)
 
 Move to **plan44's OpenWrt RV1106 fork — Linux 6.6** (152 RV1106 patches + our
