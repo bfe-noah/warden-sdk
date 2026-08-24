@@ -9,8 +9,10 @@
 //! is an in-memory word map; on the device, flared's `devmem.rs` implements the same
 //! trait over `/dev/mem`, so the same code runs against either. See the repo README.
 
+pub mod cru;
 pub mod hpmcu;
 pub mod membus;
 
+pub use cru::{BootMode, CruSim, ResetCause};
 pub use hpmcu::HpmcuSim;
 pub use membus::{MemBus, SimBus};
