@@ -112,15 +112,25 @@ jobs:
 
   kernel-build:
     # Full hermetic build on the warden-sdk self-hosted runner (bfe-mpc-0640,
-    # ADR-0004). Gated on manual dispatch until that runner is registered.
+    # ADR-0004). Manual-dispatch by design — a full kernel build is too heavy to run
+    # on every push; trigger it via `gh workflow run ci.yml` / the Actions UI.
     if: github.event_name == 'workflow_dispatch'
     runs-on: [self-hosted, warden-sdk]
     steps:
       - uses: actions/checkout@v4
+      - name: provision `python` (SDK quirk — build calls bare python)
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          ln -sf "$(command -v python3)" "$RUNNER_TEMP/bin/python"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
       - name: build zImage + rv1106-warden.dtb
         env:
           WORK: ${{ github.workspace }}/kbuild-out
           JOBS: 4   # belt-and-braces bound in addition to the runner's cgroup cap
+          # The kernel is freestanding; use the stable generic arm cross toolchain
+          # (Debian gcc-arm-linux-gnueabihf on the runner) rather than depending on
+          # the ephemeral Luckfox SDK checkout path.
+          CROSS_COMPILE: arm-linux-gnueabihf-
         run: bash build/build-kernel.sh
       - uses: actions/upload-artifact@v4
         with:

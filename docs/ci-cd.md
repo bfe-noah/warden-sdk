@@ -19,8 +19,9 @@
 A **third** repo-scoped runner instance on `bfe-mpc-0640` (alongside `flare` and
 `flare-edge`), registered with the label **`warden-sdk`** as
 `bfe-mpc-0640-warden-sdk`, in `~/actions-runner-warden-sdk`. The registration is
-done; the following steps need **`user`'s sudo on 0640** and are not automatable
-from the dev box:
+done. **Steps 1–2 below need `user`'s sudo on 0640** (systemd service + cgroup —
+not automatable from the dev box); **steps 3–4 are handled inside the workflow**, so
+the runner host needs no manual toolchain/python setup.
 
 1. **Install as a service** (persistence): `cd ~/actions-runner-warden-sdk &&
    sudo ./svc.sh install user && sudo ./svc.sh start`. Until then the runner is
@@ -29,15 +30,16 @@ from the dev box:
    `/etc/systemd/system/actions.runner.bfe-noah-warden-sdk.*.service.d/*.conf` with
    `CPUQuota=400%` + `MemoryMax=6G`, then `sudo systemctl daemon-reload`. The build
    inherits that cgroup. (The workflow also passes `JOBS=4` as a belt-and-braces bound.)
-3. **Kernel cross toolchain**: `build-kernel.sh` needs the arm cross compiler on
-   PATH — set `SDK_TC` to the dir holding `arm-rockchip830-linux-uclibcgnueabihf-*`
-   (the Luckfox SDK toolchain, as flare-edge's runner has), or install
-   `gcc-arm-linux-gnueabihf` and pass `CROSS_COMPILE=arm-linux-gnueabihf-` (the
-   kernel is freestanding, so a generic arm cross compiler links it).
-4. **`python`** (not python3): the kernel build calls bare `python`; provide a
-   project-local venv or a `python`→`python3` shim on the runner's PATH.
+3. **Kernel cross toolchain** — done in the workflow: the `kernel-build` job sets
+   `CROSS_COMPILE=arm-linux-gnueabihf-` (Debian `gcc-arm-linux-gnueabihf`, already on
+   the runner) and `build-kernel.sh` honors it. The kernel is freestanding, so the
+   generic arm cross compiler links it — no Luckfox SDK toolchain path needed. (To use
+   the SDK uclibc toolchain instead, set `SDK_TC` to its `bin/` and drop the override.)
+4. **`python`** (not python3) — done in the workflow: the `kernel-build` job symlinks
+   `python`→`python3` into `$RUNNER_TEMP/bin` and prepends it to `$GITHUB_PATH`. No
+   host-side venv/shim needed.
 
-Host build deps (sudo): `dtc bc flex bison libssl-dev` (already present on 0640).
+Host build deps: `dtc bc flex bison libssl-dev` — already present on 0640.
 
 ## Badges
 
