@@ -198,3 +198,8 @@
 &otp {
 	status = "okay";
 };
+
+/* --- GMAC: wired 10/100 ethernet via the on-die RMII FEPHY --- */
+&gmac {
+	status = "okay";
+};

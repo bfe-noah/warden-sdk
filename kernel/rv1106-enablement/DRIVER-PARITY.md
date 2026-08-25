@@ -20,6 +20,9 @@ c8a3, not just compiled.
 | watchdog (dw-wdt, ff5a0000) | ff5a0000.watchdog | mainline | ✅ batch1 (watchdog0) |
 | tsadc thermal (ff3c8000) | rockchip_thermal | ported (data+init+macros) | ✅ soc-thermal reads 39.8°C |
 | SARADC (ff3c0000) | ff3c0000.saradc | ported (2-ch v2 data) | 🔨 driver added; probe -22 (clk-rate) |
+| TRNG (rng@ff448000) | rockchip,trngv1 | mainline (rk3588 IP) | ✅ /dev/hwrng, real entropy (`rng-otp/`) |
+| OTP/nvmem (ff3d0000) | rockchip,rv1106-otp | ported (px30_otp_read) | ✅ rockchip-otp0, reads chip id |
+| GMAC (ffa80000) | rockchip,rv1106-gmac | ported (dwmac-rk rv1106_ops) | ✅ eth0 Link Up 100M/Full (`gmac/`) |
 | GPIO_SYSFS (legacy /sys/class/gpio) | — | mainline (config) | ⬜ goodix script needs it |
 | PWM (rockchip) | — | mainline (=m) | ⬜ batch2 =y (backlight) |
 | RTC (rv1106-rtc) | — | ported (vendor driver) | ✅ /dev/rtc0 registers + reads |
