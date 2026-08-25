@@ -68,6 +68,19 @@ jobs:
           [ "$ran" = 1 ] || { echo "no driver MC/DC harnesses found"; exit 1; }
           exit $fail
 
+  bench:
+    # Smoke-run the sim micro-benchmarks and emit the ns/op trend JSON. Regression
+    # gating against stored history is future work (no flare-edge pattern to copy).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: run sim benchmarks
+        working-directory: sim
+        run: |
+          cargo bench --locked --bench sim_bench 1> bench.txt 2> bench.json
+          echo "== timings =="; cat bench.txt
+          echo "== trend json =="; grep '"bench"' bench.json
+
   badges:
     needs: [test]
     if: github.event_name == 'push' && github.ref == 'refs/heads/bringup'
