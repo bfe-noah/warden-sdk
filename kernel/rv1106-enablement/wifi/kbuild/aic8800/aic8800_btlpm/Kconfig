@@ -1,0 +1,7 @@
+config AIC8800_BTLPM_SUPPORT
+	tristate "AIC8800 bluetooth Support"
+	default y
+	help
+	  This is support for the aic8800 bluetooth low-power-mode / HCI
+	  wake companion module (aic8800_btlpm). Built-in (y) by default —
+	  see the aic8800 port notes in warden-sdk/kernel/rv1106-enablement/wifi/.

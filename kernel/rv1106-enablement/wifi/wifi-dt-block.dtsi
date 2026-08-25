@@ -1,0 +1,40 @@
+	/* --- M5: AIC8800DC wifi/BT power sequencing --- */
+	sdio_pwrseq: sdio-pwrseq {
+		compatible = "mmc-pwrseq-simple";
+		pinctrl-names = "default";
+		reset-gpios = <&gpio1 RK_PA2 GPIO_ACTIVE_LOW>;
+	};
+};
+
+/* --- console --- */
+&uart2 {
+	status = "okay";
+};
+
+/* --- eMMC rootfs (M3) --- */
+&emmc {
+	bus-width = <8>;
+	cap-mmc-highspeed;
+	mmc-hs200-1_8v;
+	non-removable;
+	status = "okay";
+};
+
+/* --- M5: AIC8800DC wifi/BT SDIO (on &sdmmc, mmc@ffaa0000 — NOT &sdio) --- */
+&sdmmc {
+	max-frequency = <50000000>;
+	bus-width = <4>;
+	cap-sd-highspeed;
+	cap-sdio-irq;
+	keep-power-in-suspend;
+	non-removable;
+	rockchip,default-sample-phase = <90>;
+	supports-sdio;
+	mmc-pwrseq = <&sdio_pwrseq>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&sdmmc0_clk &sdmmc0_cmd &sdmmc0_bus4 &sdmmc0_det>;
+	status = "okay";
+};
+
+/* --- batch 1: mainline peripherals (wire DT + config) --- */
+&uart1 {
