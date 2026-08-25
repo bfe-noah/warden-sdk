@@ -42,6 +42,7 @@ c8a3, not just compiled.
 | RGA 2D (rga2) | rga2 | ported (vendor char-dev) | ✅ /dev/rga, hw 3.3.87975 |
 | I2S audio (i2s-tdm) | i2s | rv1126 fallback (=y) | ✅ cpu DAI registers (part of the card below) |
 | Audio codec (acodec) | rockchip,rv1106-codec | ported (rv1106_codec.c) | ✅ card `rv1106-acodec`, pcmC0D0p/c (`audio/`); audible test @ bench |
+| PVTM (core+pmu ring-osc) | rockchip,rv1106-*-pvtm | ported (vendor, no mainline) | ✅ both probe; debugfs reads (`pvtm/`) |
 | FIQ debugger (ttyFIQ0) | fiq_glue | rockchip | ⬜ optional (we use ttyS2) |
 
 Legend: ✅ verified on hardware · 🔨 built, not yet verified · ⬜ not started.
