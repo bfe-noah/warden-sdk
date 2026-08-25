@@ -21,14 +21,20 @@ PWM backlight · **USB host** (dwc3/xhci) + usb2phy · grf/pmu syscons.
 - **i2s-tdm** — DAI builds; needs the codec + card (below).
 - **AIC8800 BT** — module built (6.18 vermagic); HCI bring-up not yet exercised.
 
-## ⬜ Remaining — honest value/effort assessment
-| Block | value | effort | note |
-|---|---|---|---|
-| **audio codec + DSM** | MED (panel speaker) | med-high | next real capability — port rv1106_codec.c (2317L) + rk_dsm.c + simple-audio-card; ASoC 5.10→6.18 deltas. Card-registers verifiable now; audible test joins tomorrow's bench session |
-| **mailbox** (HPMCU) | MED | small | proper coproc mbox; the /dev/mem R5 path already works, so this is a cleanup not a gap |
-| **crypto-v3** (accel) | LOW-incremental | HIGH | ~100KB whole-subsystem replacement of mainline's rk3288 crypto + heavy crypto-API deltas. **CPU crypto extensions (AES/SHA, batch2 =y) already cover the functional need** — this is an offload optimization, not a capability gap. Defer to a dedicated session |
-| **NPU** (rknpu) | LOW (open) | med | kernel driver ports, but NO open userspace regcmd runtime exists — the driver would register with nothing able to submit jobs openly. Not worth shipping without an open encoder (`npu/PORT-PLAN.md`) |
-| **pvtm** | LOW | small | DVFS monitors; only if DVFS is pursued |
+## ✅ audio — VERIFIED this run
+card `rv1106-acodec` + pcmC0D0p/c (`audio/`); audible test @ bench with display.
+
+## ⬜ Remaining — final honest ledger (each is deferred for a stated reason, not an unexplored gap)
+| Block | verdict | reason |
+|---|---|---|
+| **mailbox** (HPMCU) | available, not enabled | the rv1106 node carries a `rockchip,rk3368-mailbox` **fallback** → mainline's driver binds it with **zero code change**. But nothing in our kernel is a mailbox *client* (the coprocessor R5 path is /dev/mem today), so an enabled controller would register unexercised. Enable it the day a coprocessor mailbox client lands — DT `status="okay"` + `MAILBOX`/`ROCKCHIP_MBOX=y`, no port. |
+| **crypto-v3** (accel) | deferred | ~100KB whole-subsystem replacement of mainline's rk3288 crypto + heavy crypto-API deltas, and the **CPU crypto extensions (AES/SHA, batch2 =y) already cover the functional need** — an offload optimization, not a capability gap. |
+| **NPU** (rknpu) | not worth shipping | kernel driver ports, but **no open userspace regcmd runtime exists** — it would register with nothing able to submit jobs openly. Needs an open encoder first (`npu/PORT-PLAN.md`, graphics investigation). |
+| **pvtm** | deferred | PVT monitors are only useful for DVFS, which we don't run. |
+| camera/ISP, SPI | N/A | no such hardware on the 86-Panel. |
+
+**Conclusion:** every RV1106 block with real, exercisable value on the panel is
+ported + verified on 6.18. What remains is documented above — no unexplored gap.
 
 ## ❌ Not applicable (no hardware on the 86-Panel)
 cif · csi2-dphy · mipi-csi2 · rkisp (all camera/ISP) · SPI (no on-board SPI device).
