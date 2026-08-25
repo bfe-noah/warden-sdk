@@ -20,12 +20,18 @@ pub struct NpuSim {
 impl NpuSim {
     /// A present NPU reporting 0% load.
     pub fn new() -> Self {
-        Self { present: true, load: 0 }
+        Self {
+            present: true,
+            load: 0,
+        }
     }
 
     /// An absent NPU (rknpu.ko not loaded): `/proc/rknpu/load` does not exist.
     pub fn absent() -> Self {
-        Self { present: false, load: 0 }
+        Self {
+            present: false,
+            load: 0,
+        }
     }
 
     /// Set the reported load, clamped to 0..=100.
@@ -105,6 +111,9 @@ mod tests {
 
     #[test]
     fn default_is_present_idle() {
-        assert_eq!(NpuSim::default().proc_load(), Some("NPU load:  0%\n".to_string()));
+        assert_eq!(
+            NpuSim::default().proc_load(),
+            Some("NPU load:  0%\n".to_string())
+        );
     }
 }

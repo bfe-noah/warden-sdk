@@ -92,7 +92,8 @@ impl<B: MemBus> HpmcuSim<B> {
             return;
         }
         self.polls = self.polls.wrapping_add(1);
-        self.bus.poke32(self.base + OFF_CYC, (now & 0xffff_ffff) as u32);
+        self.bus
+            .poke32(self.base + OFF_CYC, (now & 0xffff_ffff) as u32);
         let magic = self.bus.peek32(self.base + OFF_MAGIC);
         let counter = self.bus.peek32(self.base + OFF_COUNTER);
         let poll_lo = self.polls & 0xffff;
@@ -100,7 +101,8 @@ impl<B: MemBus> HpmcuSim<B> {
         if magic == MAGIC_DISARM {
             // Deliberate stand-down: resume the moment Linux re-arms; the grace
             // clock restarts so a disarm-then-silence never fires.
-            self.bus.poke32(self.base + OFF_STATE, STATE_DISARMED | poll_lo);
+            self.bus
+                .poke32(self.base + OFF_STATE, STATE_DISARMED | poll_lo);
             self.t0 = now;
             self.last_change = now;
         } else if magic == MAGIC_ARMED {
@@ -110,7 +112,8 @@ impl<B: MemBus> HpmcuSim<B> {
                 self.bus.poke32(self.base + OFF_SEEN, counter);
                 self.last_change = now;
             }
-            self.bus.poke32(self.base + OFF_STATE, STATE_ARMED | poll_lo);
+            self.bus
+                .poke32(self.base + OFF_STATE, STATE_ARMED | poll_lo);
             if now.saturating_sub(self.last_change) > HEARTBEAT_TIMEOUT_S {
                 self.fire();
             }
@@ -186,7 +189,10 @@ mod tests {
         // Heartbeat stops (counter frozen). Fires just past 90s.
         for now in (5..=90).step_by(5) {
             m.tick(now);
-            assert!(!m.fired(), "must not fire within the heartbeat window (@{now}s)");
+            assert!(
+                !m.fired(),
+                "must not fire within the heartbeat window (@{now}s)"
+            );
         }
         m.tick(91);
         assert!(m.fired(), "must fire just past the 90s heartbeat timeout");
@@ -225,7 +231,10 @@ mod tests {
             counter += 1;
             arm_beat(&bus, counter);
             m.tick(now);
-            assert!(!m.fired(), "flared armed before boot-grace: must never fire (@{now}s)");
+            assert!(
+                !m.fired(),
+                "flared armed before boot-grace: must never fire (@{now}s)"
+            );
         }
         assert_eq!(m.state(), STATE_ARMED);
     }
@@ -252,6 +261,9 @@ mod tests {
             assert!(!m.fired(), "within the heartbeat window (@{now}s)");
         }
         m.tick(695); // 695 - 600 = 95 > 90
-        assert!(m.fired(), "flared dead > heartbeat timeout: MCU fires the reset");
+        assert!(
+            m.fired(),
+            "flared dead > heartbeat timeout: MCU fires the reset"
+        );
     }
 }

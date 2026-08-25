@@ -211,6 +211,11 @@ static void integration_tests(void)
 
 int main(void)
 {
+    /* Hermeticity: layer 1's fake-io tests exercise gpio_root()'s `r && *r` NULL
+     * arm (unset env). Clear any inherited WARDEN_GPIO_ROOT so that outcome is
+     * deterministic instead of depending on the ambient shell (an exported value
+     * would otherwise drop condition coverage and spuriously fail the gate). */
+    unsetenv("WARDEN_GPIO_ROOT");
     unit_tests();
     integration_tests();
     fprintf(stderr, "%d checks, %d failures\n", g_checks, g_fail);

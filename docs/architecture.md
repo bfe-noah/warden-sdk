@@ -55,7 +55,7 @@ supervisor logic runs in CI with no panel.
 - **`membus` — register/SRAM bus.** Done. `MemBus` trait + `SimBus`.
 - **`hpmcu` — the RISC-V watchdog coprocessor.** Done. Faithful port of
   `hpmcu/watchdog/main.c`'s state machine (boot-grace, heartbeat-timeout, disarm,
-  fire) against a `SimBus` mailbox, virtual clock, 8 tests including the
+  fire) against a `SimBus` mailbox, virtual clock, 7 tests including the
   arm-within-grace no-boot-loop safety property. This is the model that would have
   let the boot-loaded-watchdog logic be validated before the flash that bricked a
   bench unit (though the *layout* fault — a load address in unreserved kernel RAM —
@@ -70,9 +70,16 @@ supervisor logic runs in CI with no panel.
   and fault injection — silent-drop and forced-NAK) so `warden-modbus`'s master can be
   hardened to MC/DC against realistic device behaviour with no serial hardware. MEI
   (0x2B/0x0E) identification is the documented follow-up.
-- **Next:** an **NPU** load model behind the path seam (deferred — no NPU feature
-  ships soon); a **GPIO/relay** sysfs model (largely covered by the `WARDEN_GPIO_ROOT`
-  seam in flare-edge's `tests/relays-mcdc/`); an **RGA** recording fake.
+- **`npu` — NPU load model.** Done. `NpuSim` models `/proc/rknpu/load` (the exact
+  "NPU load:  N%" text the sysmon reads) behind the path seam, so the load-readout UI
+  is host-testable. NPU *compute* is explicitly out of scope — no inference runs here.
+- **`rga` — 2D blitter offload.** Done. `RgaSim`, a recording `improcess` fake with a
+  programmable `IM_STATUS`, so the RGA offload-dispatch and CPU-fallback logic is
+  exercised behind the `#if WARDEN_USE_RGA` seam without librga; wired into the
+  `rga_improcess` benchmark.
+- **Next:** MEI (0x2B/0x0E) Modbus identification; the Tier-2 driver *sources*
+  (`modbus_engine.c`, `warden_rga.c`) migrate in with the flare-edge unification
+  (ADR-0005) — their hardware ends are already modelled and tested above.
 
 Integration with flare-edge: flared implements `MemBus` for `/dev/mem` and gains
 `#[cfg(test)]` tests driving its real arm/beat logic against `HpmcuSim`. This needs
@@ -86,14 +93,15 @@ once the dependency exists. No duplication of *logic* — only the tiny trait.
 "100% MC/DC on 100% of drivers" is infeasible literally: ~97% of driver LOC is
 vendor blobs (AIC8800 wifi = 88.5K lines). Tiered target:
 
-- **Tier 1 — our own hardware code → real MC/DC.** modbus master (`modbus_engine.c`),
-  relays (`relays.c`), the RGA wrapper's dispatch, the HPMCU supervisor
-  (`hpmcu.rs`), the devmem reset ladder. Method: the proven `tests/uboot-ab`
-  pattern — extract the unit, mock its world, build `-fcondition-coverage`, enforce
-  with `enforce-mcdc.sh` (gcc-14 `gcov --conditions`). **Gap the survey found: there
-  is no C-side coverage in CI at all today** — only flared line-coverage and the one
-  uboot-ab MC/DC file. Standing up an MC/DC harness for the first C driver
-  (`relays.c` — small, safety-relevant) is the first driver-hardening deliverable.
+- **Tier 1 — our own hardware code → real MC/DC.** Method: the proven `tests/uboot-ab`
+  pattern — extract the unit behind a small injectable seam, mock its world, build
+  `-fcondition-coverage`, enforce with the shared `drivers/enforce-mcdc.sh` (gcc-14
+  `gcov --conditions`) in the CI `mcdc` job. **Done here now:** `relays.c` (40/40
+  conditions) and `freshness.c` (66/66), both at 100% MC/DC and CI-enforced. **Migrate
+  in next:** the modbus master (`modbus_engine.c`) and the RGA wrapper's dispatch —
+  their hardware ends are already modelled and tested in `sim/` (`modbus`, `rga`); the
+  driver sources move in with the flare-edge unification (ADR-0005). The HPMCU
+  supervisor and devmem reset ladder are covered Rust-side (`sim/hpmcu`, `sim/cru`).
 - **Tier 2 — near-mainline small drivers → branch coverage + fault injection.**
 - **Tier 3 — vendor blobs (AIC8800, MPP/ISP/RGA libs) → fault-injection hardening
   behind the seam,** not MC/DC. The AIC8800 SDIO-wedge Tier-1 fix + the designed
@@ -124,24 +132,32 @@ fails against a DT with no `rtos@40000` node and passes once the reservation is
 added. **Next** target-config checks: partition-table-vs-image-size and
 vermagic-vs-kernel.
 
-## 6. Kernel forward-port (separate, bounded phase)
+## 6. Kernel forward-port (done — see ADR-0001)
 
-Move to **plan44's OpenWrt RV1106 fork — Linux 6.6** (152 RV1106 patches + our
-exact board DT), not mainline (no DT/clk/display/RGA/NPU/flash-boot merged). It is
-a diff-and-borrow forward-port onto our Buildroot/uClibc base, not a swap-in
-(plan44 drops Buildroot for OpenWrt/musl and ships no AIC8800 kmod). The dominant
-risk is the struct-ABI break (the VLAN saga) — mitigated by shipping any kernel
-move as one matched boot+oem image, never a partial reflash. This phase starts
-after the sim + driver-hardening foundation, since those are how we'll regression
-the port.
+A self-built **Linux 6.18.46**, forward-ported directly from the vendor 5.10.160 tree
+onto our Buildroot LTS/uClibc base — **not** the plan44/OpenWrt 6.6 fork this section
+originally reached for. **ADR-0001 records why that was superseded:** plan44 drops
+Buildroot for OpenWrt/musl and ships no AIC8800 kmod, so it was a swap-out, not a
+forward-port. Mainline alone was not viable either (no DT/clk/display/RGA/NPU/
+flash-boot upstream for RV1106); the port reuses the already-in-mainline rv1126
+register data where it matches and carries our deltas as the reviewable `patches/`
+series. This is **done and hardware-verified on `warden-c8a3`** — clk, pinctrl, eMMC,
+GMAC, TRNG, OTP, SARADC/TSADC, RTC, USB host, PWM/backlight, VOP display, GT911 touch,
+AIC8800 wifi, RGA, I2S audio, HPMCU mailbox, the open NPU driver, and PVTM all boot.
+The dominant risk was the struct-ABI break (the VLAN saga), mitigated by shipping the
+kernel move as one matched boot+oem image, never a partial reflash.
+`build/build-kernel.sh` (the hermetic build) and the `patches-apply` CI gate keep the
+series honest against pristine 6.18.46; provenance is in `patches/README.md` and
+`kernel/rv1106-enablement/`.
 
 ## 7. Order of work
 
-1. **Simulator core** — `membus` + `hpmcu` (done); reset-ladder + path-seam
-   scaffolding next.
-2. **First C-driver MC/DC harness** — `relays.c`, establishing the C coverage gate.
-3. **flared devmem/hpmcu seam + tests** (firmware-side trait; unify with `sim/`
-   when the repo has a remote).
-4. **Config-lint CI gates** (§5) — the brick-class of bug.
-5. **Hermetic image build** wrapper moves in.
-6. **Kernel 6.6 forward-port** (§6).
+1. **Simulator core** — `membus`, `hpmcu`, the `cru` reset ladder, `modbus`, plus the
+   `rga`/`npu` models. **Done.**
+2. **C-driver MC/DC harnesses** — `relays.c` and `freshness.c` at 100% MC/DC, CI-gated
+   via the shared `drivers/enforce-mcdc.sh`. **Done** (the first C coverage gate).
+3. **flared devmem/hpmcu seam + tests** — firmware-side trait, unified with `sim/`
+   once flare-edge consumes warden-sdk (a separate, [maintainer]-gated step). **Pending.**
+4. **Config-lint CI gates** (§5) — the brick-class of bug. **Done.**
+5. **Hermetic kernel build** (`build/build-kernel.sh` + the `patches-apply` gate). **Done.**
+6. **Kernel 5.10→6.18.46 forward-port** (§6, ADR-0001). **Done** (hardware-verified).

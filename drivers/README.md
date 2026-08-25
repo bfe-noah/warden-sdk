@@ -17,8 +17,11 @@ Self-contained logic with a clean seam, measured to **100% MC/DC** (gcc-14
 
 **Adding a Tier-1 driver:** copy `<name>.{c,h}` here, put the hardware/OS calls behind
 a small injectable seam, then mirror `relays/test/` (a fake backend for the logic
-branches + a real backend over a scratch tree for the plumbing) and
-`enforce-mcdc.sh`. The CI job picks up any `drivers/*/test/Makefile` automatically.
+branches + a real backend over a scratch tree for the plumbing). Reuse the shared
+gate — the Makefile calls `bash ../../enforce-mcdc.sh <gcov.log> build/<name>.c.gcov
+build/test.rc` (it derives the driver name from the `.gcov` file, so there is no
+per-driver copy to keep in sync). The CI `mcdc` job picks up any
+`drivers/*/test/Makefile` automatically.
 
 ## Tier 2 — serious testing + fault-injection + benchmarks
 
@@ -30,7 +33,7 @@ is already modelled and tested here** in `../sim/`:
 |---|---|---|
 | `modbus_engine.c` (RS485 master) | 11 pty scenarios + fault-injection + a compiled corpus walk (flare-edge `tools/modbus-sim/`, green) | `sim::modbus` RTU slave (11 tests, silent-drop/forced-NAK faults) + `modbus_read_holding` benchmark |
 | `warden_rga.c` (RGA offload) | offload-dispatch + CPU-fallback logic | `sim::rga` recording `improcess` fake (programmable IM_STATUS) + `rga_improcess` benchmark |
-| HPMCU supervisor (`hpmcu.rs`) | arm/beat/fire + boot-grace safety property | `sim::hpmcu` (8 tests) + `hpmcu_tick` benchmark |
+| HPMCU supervisor (`hpmcu.rs`) | arm/beat/fire + boot-grace safety property | `sim::hpmcu` (7 tests) + `hpmcu_tick` benchmark |
 
 **Why the Tier-2 *source* isn't vendored here yet:** `modbus_engine.c` and
 `warden_rga.c` pull in shared UI headers (`platform.h`, `settings.h`, `lv_*`) and

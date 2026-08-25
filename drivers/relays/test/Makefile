@@ -32,7 +32,7 @@ check: $(BUILD)/test
 	@echo "== MC/DC (condition) coverage of relays.c =="
 	@$(GCOV) --conditions --branch-probabilities -o $(BUILD) ../relays.c >$(BUILD)/gcov.log 2>&1 || true
 	@mv -f *.gcov $(BUILD)/ 2>/dev/null || true
-	@bash enforce-mcdc.sh $(BUILD)/gcov.log $(BUILD)/relays.c.gcov $(BUILD)/test.rc
+	@bash ../../enforce-mcdc.sh $(BUILD)/gcov.log $(BUILD)/relays.c.gcov $(BUILD)/test.rc
 
 report: check
 	@grep -nE "condition.*not covered|conditions covered" $(BUILD)/relays.c.gcov || true

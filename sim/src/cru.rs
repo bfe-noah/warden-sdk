@@ -203,7 +203,11 @@ mod tests {
         cru.poll(0);
         bus.poke32(DW_WDT_CRR, DW_WDT_PET); // pet at t=5 -> new deadline 13
         assert_eq!(cru.poll(5), None);
-        assert_eq!(cru.poll(8), None, "petted: original deadline no longer applies");
+        assert_eq!(
+            cru.poll(8),
+            None,
+            "petted: original deadline no longer applies"
+        );
         assert_eq!(cru.poll(13), Some(ResetCause::Watchdog));
     }
 

@@ -44,6 +44,9 @@ static void test_decide(void) {
     EXPECT(warden_fresh_decide(FRESH_UNKNOWN, false, false, 0,   100) == FRESH_RENDER_UNKNOWN);
     EXPECT(warden_fresh_decide(FRESH_UNKNOWN, true,  false, 200, 100) == FRESH_RENDER_UNKNOWN);
     EXPECT(warden_fresh_decide(FRESH_UNKNOWN, true,  false, 50,  100) == FRESH_RENDER_NOCHANGE);
+    /* boundary: age == max_stale is NOT stale (guards a `>`->`>=` regression that
+     * MC/DC alone would not catch — both outcomes are already covered above). */
+    EXPECT(warden_fresh_decide(FRESH_UNKNOWN, true,  false, 100, 100) == FRESH_RENDER_NOCHANGE);
 }
 
 /* --- 2. bind: !produce, !render, valid, and table-full (FRESH_MAX=2) --- */
@@ -121,10 +124,18 @@ static void test_invalidate(void) {
     EXPECT(g_render_calls == 1);
 }
 
-/* --- 6. min_budget: best==0 first, then max_stale<best true and false --- */
+/* --- 6. min_budget: unseen first, then max_stale<best true and false --- */
 static void test_min_budget(void) {
     warden_fresh_reset();
     EXPECT(warden_fresh_min_budget_ms() == 0);     /* nothing bound */
+    /* regression (correctness review): a zero-tolerance binding (max_stale=0) must
+     * win the minimum, not be mistaken for the "nothing scanned" sentinel and
+     * widened to a looser neighbour's budget. */
+    warden_fresh_bind((void*)1, fake_produce, NULL, 0,   "s", fake_render, (void*)9);
+    warden_fresh_bind((void*)1, fake_produce, NULL, 300, "s", fake_render, (void*)9);
+    EXPECT(warden_fresh_min_budget_ms() == 0);
+    warden_fresh_reset();
+    EXPECT(warden_fresh_min_budget_ms() == 0);     /* nothing bound (post-reset) */
     warden_fresh_bind((void*)1, fake_produce, NULL, 300, "s", fake_render, (void*)9); /* best=0->300 */
     warden_fresh_bind((void*)1, fake_produce, NULL, 100, "s", fake_render, (void*)9); /* 100<300 -> 100 */
     EXPECT(warden_fresh_min_budget_ms() == 100);
@@ -160,6 +171,22 @@ static void test_false_arms(void) {
     EXPECT(g_render_calls == 0);
 }
 
+/* --- 8. clock wraparound: a uint32 ms counter wraps every ~49.7 days, so a tick
+ *        can arrive with now_ms < last_ok_ms. The unsigned `now - last_ok_ms` then
+ *        underflows to a huge age; the contract must fail SAFE to UNKNOWN, never
+ *        assert the last value as if still fresh. --- */
+static void test_wraparound(void) {
+    warden_fresh_reset();
+    warden_fresh_bind((void*)1, fake_produce, NULL, 100, "s", fake_render, (void*)9);
+    set_produce(FRESH_OK, "9"); reset_render();
+    warden_fresh_tick(1000);                       /* last_ok_ms = 1000, ever_ok */
+    EXPECT(g_render_calls == 1 && g_render_what == FRESH_RENDER_VALUE);
+    /* now wraps behind last_ok_ms: age underflows -> treated as stale -> UNKNOWN */
+    set_produce(FRESH_UNKNOWN, NULL); reset_render();
+    warden_fresh_tick(10);
+    EXPECT(g_render_calls == 1 && g_render_what == FRESH_RENDER_UNKNOWN);
+}
+
 int main(void) {
     test_decide();
     test_bind();
@@ -168,6 +195,7 @@ int main(void) {
     test_invalidate();
     test_min_budget();
     test_false_arms();
+    test_wraparound();
     fprintf(stderr, "%d checks, %d failures\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

@@ -31,7 +31,7 @@ check: $(BUILD)/test
 	@echo "== MC/DC (condition) coverage of freshness.c =="
 	@$(GCOV) --conditions --branch-probabilities -o $(BUILD) ../freshness.c >$(BUILD)/gcov.log 2>&1 || true
 	@mv -f *.gcov $(BUILD)/ 2>/dev/null || true
-	@bash enforce-mcdc.sh $(BUILD)/gcov.log $(BUILD)/freshness.c.gcov $(BUILD)/test.rc
+	@bash ../../enforce-mcdc.sh $(BUILD)/gcov.log $(BUILD)/freshness.c.gcov $(BUILD)/test.rc
 
 report: check
 	@grep -nE "condition.*not covered|conditions covered" $(BUILD)/freshness.c.gcov || true

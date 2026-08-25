@@ -11,11 +11,13 @@ RV1106 HMI). A from-scratch replacement for the twice-ported vendor stack
 the rest of the firmware: tested, benchmarked, reproducible, and honest about
 what runs on real silicon versus what we simulate.
 
-> Status: **bootstrapping.** This repo is being stood up incrementally; today it
-> hosts the hardware **simulator** and its tests. The kernel forward-port and the
-> hermetic image build move in as each is proven. Until then, flare-edge still
-> builds firmware from the vendored SDK + `sdk-patches/`; nothing here is on the
-> production build path yet.
+> Status: **bringup.** The hardware **simulator** and its tests, the RV1106 kernel
+> forward-port as a reviewable `patches/` series, the hermetic kernel build, and two
+> Tier-1 drivers at 100% MC/DC are all in and CI-green on the `bringup` branch. What
+> remains before this is on the production build path: installing the self-hosted
+> kernel-build runner (see `docs/ci-cd.md`) and having flare-edge consume warden-sdk
+> as a dependency — both [maintainer]-gated. Until then, flare-edge still builds firmware from
+> the vendored SDK + `sdk-patches/`.
 
 ## Why a new SDK
 
@@ -87,13 +89,15 @@ than duplicate each other.
 ## Layout
 
 ```
-sim/        the hardware simulator (Rust): mailbox/devmem model, HPMCU, RGA, NPU.
-drivers/    our own hardened drivers + their seams (as they migrate in).
-patches/    the vendor-SDK delta (mirrors flare-edge/sdk-patches until it moves here).
-build/      the hermetic image-build wrapper (kernel → rootfs → image), incremental.
-ci/         CI: patches-still-apply, host tests, coverage, benchmarks.
-docs/       architecture + ADRs (decisions/).
-tools/      dev tooling. config-lint: static target-config gates (MCU-load-vs-reserved-memory — the 0x40000 brick class).
+sim/        the hardware simulator (Rust): membus/devmem, HPMCU, CRU, Modbus, RGA, NPU.
+drivers/    our own hardened drivers + their seams (relays, freshness; more migrate in).
+patches/    the RV1106 kernel forward-port delta onto pristine linux-6.18.46 (subsystem-split).
+kernel/     forward-port docs + provenance (rv1106-enablement/, PROVENANCE.md).
+build/      the hermetic kernel build (fetch pristine → apply patches → zImage + dtb).
+docs/       architecture + ADRs (decisions/) + ci-cd + generated workflow flowcharts.
+tools/      dev tooling. config-lint: static target-config gates (MCU-load-vs-reserved-memory,
+            the 0x40000 brick class); flowgen: the workflow-flowchart generator.
+.github/    CI (workflows/ci.yml): patches-apply, host tests, coverage, MC/DC, benchmarks, badges.
 ```
 
 ## Principles
