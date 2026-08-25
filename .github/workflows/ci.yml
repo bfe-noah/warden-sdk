@@ -135,7 +135,12 @@ jobs:
           # the ephemeral Luckfox SDK checkout path.
           CROSS_COMPILE: arm-linux-gnueabihf-
         run: bash build/build-kernel.sh
+      # Best-effort: the build IS the gate. Uploading the zImage/dtb to GitHub
+      # artifact storage can fail on an account-wide storage-quota hit (recalculated
+      # every 6-12h) that has nothing to do with this build — don't red-X a good
+      # kernel build over it. The outputs also remain on the self-hosted runner host.
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: kernel-rv1106
           path: |
