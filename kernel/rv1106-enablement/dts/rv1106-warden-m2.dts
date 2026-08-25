@@ -1,0 +1,117 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Minimal RV1106 devicetree for the WardenOS 86-Panel — M2 "earlycon" bring-up
+ * of the self-built Linux 6.18 forward-port (warden-sdk kernel/docs/bringup.md).
+ *
+ * Deliberately NOT the full vendor rv1106.dtsi: just the core needed to reach
+ * "it's alive" on the debug UART — CPU, GIC, arch timer, RAM, the CRU (our
+ * ported clk-rv1106), GRF, and uart2 (the console, driven by mainline 8250_dw).
+ * earlycon writes uart2's MMIO directly at the bootloader's divisor, so it prints
+ * before the clock/pinctrl drivers probe; the real ttyS console then needs the
+ * CRU to hand out SCLK_UART2, which is exactly what this validates on hardware.
+ *
+ * PORT-VERIFY (must be checked against the TRM / on hardware before trusting a
+ * boot — a wrong value here silently hangs the board):
+ *   - memory size/base (256 MiB @ 0x0 assumed for the 86-Panel; the loader
+ *     usually patches this — confirm against the real DDR init);
+ *   - uart2 is the console at 0xff4c0000 (matches the vendor ttyFIQ0 base);
+ *   - CRU needs no assigned-clocks here (PLLs keep their loader rates) — fine for
+ *     earlycon/console, revisit for the full clock tree.
+ */
+/dts-v1/;
+
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/clock/rv1106-cru.h>
+
+/ {
+	model = "WardenOS 86-Panel (RV1106) — M2 earlycon bring-up";
+	compatible = "rockchip,rv1106";
+	#address-cells = <1>;
+	#size-cells = <1>;
+	interrupt-parent = <&gic>;
+
+	aliases {
+		serial2 = &uart2;
+	};
+
+	chosen {
+		stdout-path = "serial2:1500000n8";
+		/*
+		 * earlycon with no baud = reuse the divisor the bootloader left in
+		 * uart2, so the first prints work regardless of our clock tree. The
+		 * ttyS console rate (1.5M) is PORT-VERIFY against the board.
+		 */
+		bootargs = "earlycon=uart8250,mmio32,0xff4c0000 console=ttyS2,1500000n8 earlyprintk rootwait";
+	};
+
+	memory@0 {
+		device_type = "memory";
+		reg = <0x00000000 0x10000000>; /* 256 MiB — PORT-VERIFY */
+	};
+
+	xin24m: oscillator {
+		compatible = "fixed-clock";
+		clock-frequency = <24000000>;
+		clock-output-names = "xin24m";
+		#clock-cells = <0>;
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu0: cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a7";
+			reg = <0x0>;
+			clocks = <&cru ARMCLK>;
+		};
+	};
+
+	timer {
+		compatible = "arm,armv7-timer";
+		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(1) | IRQ_TYPE_LEVEL_HIGH)>,
+			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(1) | IRQ_TYPE_LEVEL_HIGH)>;
+		clock-frequency = <24000000>;
+	};
+
+	gic: interrupt-controller@ff1f0000 {
+		compatible = "arm,gic-400";
+		interrupt-controller;
+		#interrupt-cells = <3>;
+		#address-cells = <0>;
+		reg = <0xff1f1000 0x1000>,
+		      <0xff1f2000 0x2000>,
+		      <0xff1f4000 0x2000>,
+		      <0xff1f6000 0x2000>;
+		interrupts = <GIC_PPI 9 (GIC_CPU_MASK_SIMPLE(1) | IRQ_TYPE_LEVEL_HIGH)>;
+	};
+
+	grf: syscon@ff000000 {
+		compatible = "rockchip,rv1106-grf", "syscon", "simple-mfd";
+		reg = <0xff000000 0x68000>;
+	};
+
+	cru: clock-controller@ff3a0000 {
+		compatible = "rockchip,rv1106-cru";
+		reg = <0xff3a0000 0x20000>;
+		rockchip,grf = <&grf>;
+		clocks = <&xin24m>;
+		clock-names = "xin24m";
+		#clock-cells = <1>;
+		#reset-cells = <1>;
+	};
+
+	uart2: serial@ff4c0000 {
+		compatible = "rockchip,rv1106-uart", "snps,dw-apb-uart";
+		reg = <0xff4c0000 0x100>;
+		interrupts = <GIC_SPI 27 IRQ_TYPE_LEVEL_HIGH>;
+		reg-shift = <2>;
+		reg-io-width = <4>;
+		clock-frequency = <24000000>;
+		clocks = <&cru SCLK_UART2>, <&cru PCLK_UART2>;
+		clock-names = "baudclk", "apb_pclk";
+		status = "okay";
+	};
+};
