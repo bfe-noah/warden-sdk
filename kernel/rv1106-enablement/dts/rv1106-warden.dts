@@ -1,0 +1,61 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * WardenOS 86-Panel board DT for the self-built Linux 6.18 forward-port.
+ *
+ * Includes the full vendor rv1106.dtsi (SoC nodes + pinctrl + gpio + dmac), then
+ * enables only what our wall-HMI needs — no camera/ISP/CSI. Grows one driver
+ * batch at a time toward full parity with the 5.10 kernel (DRIVER-PARITY.md).
+ */
+/dts-v1/;
+
+#include "rv1106.dtsi"
+
+/ {
+	model = "WardenOS 86-Panel (RV1106)";
+	compatible = "rockchip,rv1106-warden", "rockchip,rv1106";
+
+	chosen {
+		stdout-path = "serial2:115200n8";
+		bootargs = "earlycon=uart8250,mmio32,0xff4c0000 console=ttyS2,115200n8 earlyprintk rootwait";
+	};
+
+	memory@0 {
+		device_type = "memory";
+		reg = <0x00000000 0x10000000>; /* 256 MiB */
+	};
+};
+
+/* --- console --- */
+&uart2 {
+	status = "okay";
+};
+
+/* --- eMMC rootfs (M3) --- */
+&emmc {
+	bus-width = <8>;
+	cap-mmc-highspeed;
+	mmc-hs200-1_8v;
+	non-removable;
+	status = "okay";
+};
+
+/* --- batch 1: mainline peripherals (wire DT + config) --- */
+&uart1 {
+	status = "okay";
+};
+
+&uart4 {
+	status = "okay";
+};
+
+&i2c3 {
+	status = "okay";
+};
+
+&saradc {
+	status = "okay";
+};
+
+&wdt {
+	status = "okay";
+};
