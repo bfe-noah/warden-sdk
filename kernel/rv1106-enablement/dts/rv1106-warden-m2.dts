@@ -36,13 +36,14 @@
 	};
 
 	chosen {
-		stdout-path = "serial2:1500000n8";
+		stdout-path = "serial2:115200n8";
 		/*
 		 * earlycon with no baud = reuse the divisor the bootloader left in
-		 * uart2, so the first prints work regardless of our clock tree. The
-		 * ttyS console rate (1.5M) is PORT-VERIFY against the board.
+		 * uart2, so the first prints work regardless of our clock tree. The ttyS console is
+		 * pinned to 115200 to stay readable on the CP2102 bench adapter;
+		 * production WardenOS uses 1.5M.
 		 */
-		bootargs = "earlycon=uart8250,mmio32,0xff4c0000 console=ttyS2,1500000n8 earlyprintk rootwait";
+		bootargs = "earlycon=uart8250,mmio32,0xff4c0000 console=ttyS2,115200n8 earlyprintk rootwait";
 	};
 
 	memory@0 {
@@ -91,6 +92,14 @@
 	grf: syscon@ff000000 {
 		compatible = "rockchip,rv1106-grf", "syscon", "simple-mfd";
 		reg = <0xff000000 0x68000>;
+
+		/* The CRU's clk-rv1106 registers a second branch set against this
+		 * GRF clock-controller (grf_ctx); without the node grf_ctx is NULL
+		 * and of_clk_init NULL-derefs in rockchip_clk_register_branches. */
+		grf_cru: grf-clock-controller {
+			compatible = "rockchip,rv1106-grf-cru";
+			#clock-cells = <1>;
+		};
 	};
 
 	cru: clock-controller@ff3a0000 {

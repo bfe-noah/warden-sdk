@@ -70,14 +70,36 @@ The first full kernel build with our SoC drivers, 2026-08-24:
 console baud (1.5M assumed). A wrong DDR/clock value silently hangs before or just after
 earlycon.
 
-## M2 — boot: NEXT (on hardware)
-Package `zImage` + `rv1106-warden-m2.dtb` into a boot image and load on a bench unit
-(c8a3 / w7159, both with a proven recovery net), watching the debug UART — or the
-coprocessor USB console (R5) — for the earlycon "it's alive". A hang is expected to be
-one of the PORT-VERIFY values above; iterate with recovery ready. This is an attended
-step (brick-adjacent), not an unattended one.
+## M2 — boot: ✅ DONE — "it's alive" on warden-c8a3 (2026-08-24)
+The self-built **Linux 6.18.46 boots on real RV1106 hardware**, through our ported
+drivers, verified over the serial console. It reaches earlycon, the arch timer
+(BogoMIPS calibrated), **our `clk-rv1106` CRU driver**, pinctrl, and the mainline
+8250 bound to uart2 **clocked by our CRU** (`ttyS2 … 16550A`), then hands off to the
+real console and mounts a rootfs. See `../docs/m2-boot-on-c8a3.md` for the method
+(the A/B `_b`-slot safe-test framework worked first try) and the boot-image format
+(external-data FIT + resource, `mkimage -E -p 0x800`).
 
-Then M3: `dw_mmc` DT + rootfs on our Buildroot userspace.
+Three bring-up bugs were found and fixed on hardware, all captured in the DT:
+1. **boot.img format** — rockchip U-Boot needs the external-data FIT + a `resource`
+   (multi) sub-image with `rk-kernel.dtb`, else `No fit blob` / `Failed to load DTB`.
+2. **DTB overrun** — the bloated multi_v7 zImage decompresses to ~20 MiB and overran
+   the DTB at 0xc00000, so the kernel got `r2=0` (`invalid dtb`). Fix: place the fdt
+   high (`load=0x08000000`). A lean RV1106 defconfig would also fix this and is the
+   right long-term move.
+3. **grf-cru NULL deref** — `clk-rv1106` registers a second branch set against a GRF
+   clock-controller (`grf_ctx`), set only by a `rockchip,rv1106-grf-cru` node. The
+   minimal DT omitted it → `grf_ctx` NULL → panic in `rockchip_clk_register_branches`.
+   Fix: add the `grf-clock-controller` child to the grf syscon.
+
+**clk-rv1106 PORT-VERIFY (armclk mux, PLL rates) is now partially retired**: the CRU
+comes up far enough to clock the UART and the arch timer on hardware. A wrong CPU
+mux/PLL would show later (cpufreq / peripheral rates), still to be checked.
+
+## M3 — rootfs boot: NEXT
+The M2 kernel mounts the 5.10 WardenOS rootfs_b but the userspace/module vermagic
+mismatches (5.10 `.ko` won't load on 6.18). M3 = a lean RV1106 defconfig (drop
+multi_v7), `dw_mmc`/`sdhci` DT wired to our CRU (eMMC already probes — `MMC0: HS200`),
+and our Buildroot userspace rebuilt against 6.18. Then M4 display, M5 wifi, M6 rest.
 
 ## Upstream tracking (decision 2026-08-23)
 Base stays the vendor forward-port (applies to 6.18; we control it). The unmerged upstream
