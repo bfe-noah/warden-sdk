@@ -48,11 +48,36 @@ RV1106:` in the 3 pull functions + the RK3568 drive-strength group; `rv1106_pin_
 - **Still PORT-VERIFY:** GPIO4 bank pin-count (`pin_banks` says 24, DT `gpio-ranges` says 32) —
   carried from vendor unchanged; needs TRM/hardware.
 
-## M1 — mach + defconfig: NEXT
-Per the breadth survey's integration order: mach is a ~2-line DT-compat add to `rockchip.c`
-(do NOT recreate the dropped `CPU_RV1106` symbol); then the minimal M2 defconfig; then the DT
-(SoC nodes transplant + board-specific PORT-VERIFY: console UART, boot media, panel timings);
-then the first full kernel build toward an earlycon boot.
+## M1 — mach: ✅ DONE
+`mach-rockchip` RV1106/RV1103 SoC recognition added as a DT-compat entry (no
+`CPU_RV1106` symbol recreated). Captured as `mach/0001-rv1106-soc-recognition.patch`.
+**M1 is complete: clk + pinctrl + mach all compile clean on 6.18.**
+
+## M2 — earlycon build: ✅ DONE (boot pending hardware)
+The first full kernel build with our SoC drivers, 2026-08-24:
+- **`multi_v7_defconfig` + `configs/m2-earlycon.fragment` builds an 11.8 MB zImage**
+  with `clk-rv1106.o` (85732 B) and `pinctrl-rockchip.o` (173688 B, our rv1106 data)
+  compiled *into the full tree* — no rv1106 warnings/errors. Reproducible via
+  `build-m2.sh`.
+- **`dts/rv1106-warden-m2.dts` → `rv1106-warden-m2.dtb` compiles clean** (W=1, no dtc
+  warnings). A deliberately minimal DT — CPU (cortex-a7), GIC-400, arch timer, 256 MiB
+  RAM, GRF, the CRU (our clk-rv1106), and uart2 (`snps,dw-apb-uart`, the console) —
+  with `earlycon=uart8250,mmio32,0xff4c0000` so the first print reuses the loader's
+  divisor before any clock/pinctrl probe.
+
+**Still PORT-VERIFY before a boot is trusted:** memory size/base (256 MiB @ 0x0 assumed
+— the loader usually patches this); the CPU clock mux in clk-rv1106 (§M1 item 4); the
+console baud (1.5M assumed). A wrong DDR/clock value silently hangs before or just after
+earlycon.
+
+## M2 — boot: NEXT (on hardware)
+Package `zImage` + `rv1106-warden-m2.dtb` into a boot image and load on a bench unit
+(c8a3 / w7159, both with a proven recovery net), watching the debug UART — or the
+coprocessor USB console (R5) — for the earlycon "it's alive". A hang is expected to be
+one of the PORT-VERIFY values above; iterate with recovery ready. This is an attended
+step (brick-adjacent), not an unattended one.
+
+Then M3: `dw_mmc` DT + rootfs on our Buildroot userspace.
 
 ## Upstream tracking (decision 2026-08-23)
 Base stays the vendor forward-port (applies to 6.18; we control it). The unmerged upstream
@@ -69,10 +94,12 @@ on-hardware validation — which waits on c8a3's recovery and, ultimately, caref
 
 ## Layout
 ```
-clk/
-  clk-rv1106.c                         the ported driver (WIP, compiles to :427)
-  rv1106-cru.h                         the clock-id dt-bindings header (staged)
-  0001-rv1106-clk-framework-hooks.wip.patch   Makefile/Kconfig/clk.h deltas vs vanilla 6.18
+clk/        clk-rv1106.c + rv1106-cru.h + framework-hooks patch (M1)
+pinctrl/    0001-rv1106-pinctrl.patch                              (M1)
+mach/       0001-rv1106-soc-recognition.patch                     (M1)
+dts/        rv1106-warden-m2.dts   minimal earlycon board DT       (M2)
+configs/    m2-earlycon.fragment   defconfig delta over multi_v7   (M2)
+build-m2.sh reproducible M2 build (zImage + dtb)
 ```
 The full ported tree lives in `flare-edge/research/linux-6.18.46/` (scratch); this dir is
 the durable, reviewable capture, to become a proper patch series as milestones land.
