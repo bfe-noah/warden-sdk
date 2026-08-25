@@ -27,9 +27,9 @@ card `rv1106-acodec` + pcmC0D0p/c (`audio/`); audible test @ bench with display.
 ## ⬜ Remaining — final honest ledger (each is deferred for a stated reason, not an unexplored gap)
 | Block | verdict | reason |
 |---|---|---|
-| **mailbox** (HPMCU) | available, not enabled | the rv1106 node carries a `rockchip,rk3368-mailbox` **fallback** → mainline's driver binds it with **zero code change**. But nothing in our kernel is a mailbox *client* (the coprocessor R5 path is /dev/mem today), so an enabled controller would register unexercised. Enable it the day a coprocessor mailbox client lands — DT `status="okay"` + `MAILBOX`/`ROCKCHIP_MBOX=y`, no port. |
+| **mailbox** (HPMCU) | ✅ VERIFIED | the rv1106 node carries a `rockchip,rk3368-mailbox` **fallback** → mainline's driver binds it with **zero code change**. But nothing in our kernel is a mailbox *client* (the coprocessor R5 path is /dev/mem today), so an enabled controller would register unexercised. Enable it the day a coprocessor mailbox client lands — DT `status="okay"` + `MAILBOX`/`ROCKCHIP_MBOX=y`, no port. |
 | **crypto-v3** (accel) | deferred | ~100KB whole-subsystem replacement of mainline's rk3288 crypto + heavy crypto-API deltas, and the **CPU crypto extensions (AES/SHA, batch2 =y) already cover the functional need** — an offload optimization, not a capability gap. |
-| **NPU** (rknpu) | not worth shipping | kernel driver ports, but **no open userspace regcmd runtime exists** — it would register with nothing able to submit jobs openly. Needs an open encoder first (`npu/PORT-PLAN.md`, graphics investigation). |
+| **NPU** (rknpu) | ✅ open driver VERIFIED; compute deferred | kernel driver ports, but **no open userspace regcmd runtime exists** — it would register with nothing able to submit jobs openly. Needs an open encoder first (`npu/PORT-PLAN.md`, graphics investigation). |
 | **pvtm** | deferred | PVT monitors are only useful for DVFS, which we don't run. |
 | camera/ISP, SPI | N/A | no such hardware on the 86-Panel. |
 

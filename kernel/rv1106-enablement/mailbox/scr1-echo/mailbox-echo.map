@@ -1,0 +1,91 @@
+
+Discarded input sections
+
+ .text          0x0000000000000000        0x0 start.o
+ .data          0x0000000000000000        0x0 start.o
+ .bss           0x0000000000000000        0x0 start.o
+ .text          0x0000000000000000        0x0 main.o
+ .data          0x0000000000000000        0x0 main.o
+ .bss           0x0000000000000000        0x0 main.o
+ .comment       0x0000000000000000       0x34 main.o
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+SRAM             0x00000000ff6fe000 0x0000000000001c00 xrw
+*default*        0x0000000000000000 0xffffffffffffffff
+
+Linker script and memory map
+
+LOAD start.o
+LOAD main.o
+
+.text           0x00000000ff6fe000       0x9a
+ *(.text.start)
+ .text.start    0x00000000ff6fe000       0x34 start.o
+                0x00000000ff6fe000                _start
+ *(.text*)
+ .text.startup.main
+                0x00000000ff6fe034       0x66 main.o
+                0x00000000ff6fe034                main
+
+.rela.dyn       0x00000000ff6fe09c        0x0
+ .rela.text.start
+                0x00000000ff6fe09c        0x0 start.o
+
+.rodata
+ *(.rodata*)
+ *(.srodata*)
+
+.data
+ *(.data*)
+ *(.sdata*)
+
+.bss            0x00000000ff6fe09a        0x2
+                0x00000000ff6fe09c                . = ALIGN (0x4)
+ *fill*         0x00000000ff6fe09a        0x2 
+                0x00000000ff6fe09c                __bss_start = .
+ *(.bss*)
+ *(.sbss*)
+ *(COMMON)
+                0x00000000ff6fe09c                . = ALIGN (0x4)
+                0x00000000ff6fe09c                __bss_end = .
+                0x00000000ff6fff00                __stack_top = 0xff6fff00
+
+/DISCARD/
+ *(.eh_frame)
+ *(.riscv.attributes)
+ *(.comment)
+OUTPUT(hpmcu-mailbox-echo.elf elf32-littleriscv)
+
+.debug_line     0x0000000000000000      0x39f
+ .debug_line    0x0000000000000000       0x74 start.o
+ .debug_line    0x0000000000000074      0x32b main.o
+
+.debug_info     0x0000000000000000      0x12e
+ .debug_info    0x0000000000000000       0x26 start.o
+ .debug_info    0x0000000000000026      0x108 main.o
+
+.debug_abbrev   0x0000000000000000       0xa1
+ .debug_abbrev  0x0000000000000000       0x14 start.o
+ .debug_abbrev  0x0000000000000014       0x8d main.o
+
+.debug_aranges  0x0000000000000000       0x40
+ .debug_aranges
+                0x0000000000000000       0x20 start.o
+ .debug_aranges
+                0x0000000000000020       0x20 main.o
+
+.debug_str      0x0000000000000000      0x175
+ .debug_str     0x0000000000000000       0x64 start.o
+ .debug_str     0x0000000000000064      0x111 main.o
+                                        0x1a8 (size before relaxing)
+
+.debug_loc      0x0000000000000000       0x7c
+ .debug_loc     0x0000000000000000       0x7c main.o
+
+.debug_ranges   0x0000000000000000       0x40
+ .debug_ranges  0x0000000000000000       0x40 main.o
+
+.debug_frame    0x0000000000000000       0x20
+ .debug_frame   0x0000000000000000       0x20 main.o

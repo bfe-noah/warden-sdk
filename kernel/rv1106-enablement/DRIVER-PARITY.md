@@ -38,10 +38,11 @@ c8a3, not just compiled.
 | GPIO_SYSFS / crypto / CFG80211 | — | mainline (config) | ✅ =y (batch2) |
 | AIC8800 wifi (bsp/fdrv) | aic8800_* | **out-of-tree** | ✅ M5 — wlan0 up, scanned BlueFlare −43dBm (modules, `wifi/VERIFIED-on-c8a3.md`) |
 | AIC8800 BT (btlpm) | aic8800_btlpm | **out-of-tree** | 🔨 module built (6.18 vermagic); HCI bring-up not yet exercised |
-| NPU (rknpu, ff660000) | rknpu, ff660000.npu | **out-of-tree** | ⬜ M6 — plan: `npu/PORT-PLAN.md` |
+| NPU (rknpu, ff660000) | rknpu, ff660000.npu | **out-of-tree** | 🔨 M6 built, 0 errors/0 warnings, 99 `rknpu`-prefixed symbols in `System.map`, `&npu {status="okay"}` in the dtb — **not yet flashed/probed on hardware** (build-only session; see `npu/PORT-PROGRESS.md`) |
 | RGA 2D (rga2) | rga2 | ported (vendor char-dev) | ✅ /dev/rga, hw 3.3.87975 |
 | I2S audio (i2s-tdm) | i2s | rv1126 fallback (=y) | ✅ cpu DAI registers (part of the card below) |
 | Audio codec (acodec) | rockchip,rv1106-codec | ported (rv1106_codec.c) | ✅ card `rv1106-acodec`, pcmC0D0p/c (`audio/`); audible test @ bench |
+| HPMCU mailbox (ff5c0000) | rockchip,rv1106-mailbox | rk3368 fallback +rv1106 num_chans=1 | ✅ A7<->SCR1 round-trip, 5/5 exact (`mailbox/VERIFIED.md`) |
 | PVTM (core+pmu ring-osc) | rockchip,rv1106-*-pvtm | ported (vendor, no mainline) | ✅ both probe; debugfs reads (`pvtm/`) |
 | FIQ debugger (ttyFIQ0) | fiq_glue | rockchip | ⬜ optional (we use ttyS2) |
 

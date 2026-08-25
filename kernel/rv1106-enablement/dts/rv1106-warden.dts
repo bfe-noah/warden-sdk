@@ -245,3 +245,26 @@
 		};
 	};
 };
+
+/* --- HPMCU mailbox (A7 <-> RISC-V SCR1). Controller binds via the rk3368
+ * fallback compatible with zero driver patch; @ff5c0000 is the HPMCU-connected
+ * instance (SRST_CORE_MCU on the Linux side, MBOX_BASE 0xFF5C0000 on the MCU
+ * side). M-MBOX-1 proves the controller; M-MBOX-2 adds the SCR1 echo + round-trip. */
+&mailbox {
+	status = "okay";
+};
+
+/* --- NPU (rknpu, ff660000). Kernel driver ported from the vendor 5.10 BSP
+ * (GPL source port -- see warden-sdk/kernel/rv1106-enablement/npu/PORT-PLAN.md
+ * and PORT-PROGRESS.md). compatible/reg/interrupts/clocks/resets are already
+ * fully specified in rv1106.dtsi's rv1106_rknpu_config-matching npu node --
+ * this is only the status flip, same pattern as every other block enabled
+ * in this file. No iommus= property (this board's NPU runs non-iommu,
+ * matching the 5.10 boot-log finding), no power-domains (single-rail). */
+&npu {
+	/* the rknpu driver requests its IRQ by name ("npu_irq"); the base dtsi
+	 * node declares the interrupt but no interrupt-names, so probe fails
+	 * "IRQ npu_irq not found" without this. */
+	interrupt-names = "npu_irq";
+	status = "okay";
+};
