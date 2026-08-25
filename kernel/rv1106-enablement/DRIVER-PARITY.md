@@ -18,11 +18,11 @@ c8a3, not just compiled.
 | uart1 / uart4 | ttyS1, ttyS4 | mainline | ✅ batch1 |
 | I2C (dw-apb, ff460000=i2c3) | ff460000.i2c | mainline | ✅ batch1 (i2c-3) |
 | watchdog (dw-wdt, ff5a0000) | ff5a0000.watchdog | mainline | ✅ batch1 (watchdog0) |
-| thermal governor | rockchip_thermal | mainline | 🔨 gov up; tsadc node TODO |
+| tsadc thermal (ff3c8000) | rockchip_thermal | ported (data+init+macros) | ✅ soc-thermal reads 39.8°C |
 | SARADC (ff3c0000) | ff3c0000.saradc | ported (2-ch v2 data) | 🔨 driver added; probe -22 (clk-rate) |
 | GPIO_SYSFS (legacy /sys/class/gpio) | — | mainline (config) | ⬜ goodix script needs it |
 | PWM (rockchip) | — | mainline (=m) | ⬜ batch2 =y (backlight) |
-| RTC (rv1106-rtc) | — | **no mainline driver** | ⬜ port (low prio) |
+| RTC (rv1106-rtc) | — | ported (vendor driver) | ✅ /dev/rtc0 registers + reads |
 | USB2 phy (inno, rv1106) | rockchip_usb2phy_* | ported (data, no tuning) | ✅ probes → USB up |
 | USB host (DWC3→xhci, ffb00000) | xhci-hcd:usb1 | mainline | ✅ xhci host registered |
 | USB OTG gadget (DWC3, eth0) | eth0 | mainline dwc3 | 🔨 host works; eth0 needs dr_mode=peripheral |
@@ -35,9 +35,9 @@ c8a3, not just compiled.
 | GPIO_SYSFS / crypto / CFG80211 | — | mainline (config) | ✅ =y (batch2) |
 | AIC8800 wifi (bsp/fdrv) | aic8800_* | **out-of-tree** | ⬜ M5 |
 | AIC8800 BT (btlpm) | aic8800_btlpm | **out-of-tree** | ⬜ M5 |
-| NPU (rknpu, ff660000) | rknpu, ff660000.npu | **out-of-tree** | ⬜ M6 |
+| NPU (rknpu, ff660000) | rknpu, ff660000.npu | **out-of-tree** | ⬜ M6 — plan: `npu/PORT-PLAN.md` |
 | RGA 2D (rga2) | rga2 | rockchip | ⬜ M6 |
-| I2S audio | i2s | rockchip | ⬜ M6 |
+| I2S audio (i2s-tdm) | i2s | rv1126 fallback | 🔨 DAI built; needs acodec+card |
 | FIQ debugger (ttyFIQ0) | fiq_glue | rockchip | ⬜ optional (we use ttyS2) |
 
 Legend: ✅ verified on hardware · 🔨 built, not yet verified · ⬜ not started.
