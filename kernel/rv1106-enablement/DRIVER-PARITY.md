@@ -19,13 +19,13 @@ c8a3, not just compiled.
 | I2C (dw-apb, ff460000=i2c3) | ff460000.i2c | mainline | ✅ batch1 (i2c-3) |
 | watchdog (dw-wdt, ff5a0000) | ff5a0000.watchdog | mainline | ✅ batch1 (watchdog0) |
 | thermal governor | rockchip_thermal | mainline | 🔨 gov up; tsadc node TODO |
-| SARADC (ff3c0000) | ff3c0000.saradc | mainline (no rv1106 compat) | ⬜ needs compat fallback |
+| SARADC (ff3c0000) | ff3c0000.saradc | ported (2-ch v2 data) | 🔨 driver added; probe -22 (clk-rate) |
 | GPIO_SYSFS (legacy /sys/class/gpio) | — | mainline (config) | ⬜ goodix script needs it |
 | PWM (rockchip) | — | mainline (=m) | ⬜ batch2 =y (backlight) |
 | RTC (rv1106-rtc) | — | **no mainline driver** | ⬜ port (low prio) |
-| USB2 phy (inno, rv1106) | rockchip_usb2phy_* | mainline (no rv1106 data) | ⬜ port (data + tuning) |
-| USB OTG gadget (DWC3, eth0) | eth0 | mainline dwc3 (needs phy) | ⬜ M6 (after phy) |
-| USB host (xhci, usb1) | xhci-hcd:usb1 | mainline | ⬜ M6 |
+| USB2 phy (inno, rv1106) | rockchip_usb2phy_* | ported (data, no tuning) | ✅ probes → USB up |
+| USB host (DWC3→xhci, ffb00000) | xhci-hcd:usb1 | mainline | ✅ xhci host registered |
+| USB OTG gadget (DWC3, eth0) | eth0 | mainline dwc3 | 🔨 host works; eth0 needs dr_mode=peripheral |
 | crypto (aes/ccm/ctr/arc4) | modules | mainline | ⬜ batch2 (config =y) |
 | PSCI node (removed) | — | — | ✅ deleted (no secure monitor → SMC fault) |
 | VOP display (ff990000) | ff990000.vop | ported (rv1126 sibling) | 🔨 binds+DRM+card0; connector WIP |

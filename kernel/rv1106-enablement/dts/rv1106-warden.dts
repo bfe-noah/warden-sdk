@@ -128,3 +128,21 @@
 &rgb {
 	status = "disabled";
 };
+
+/* --- sweep: USB OTG (eth0 gadget / host) via the ported inno-usb2 phy --- */
+&u2phy {
+	status = "okay";
+};
+
+&u2phy_otg {
+	status = "okay";
+};
+
+&usbdrd {
+	status = "okay";
+};
+
+&usbdrd_dwc3 {
+	status = "okay";
+	dr_mode = "otg";
+};
