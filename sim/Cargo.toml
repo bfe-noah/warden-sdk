@@ -12,3 +12,8 @@ path = "src/lib.rs"
 [dependencies]
 
 [dev-dependencies]
+
+# Dependency-free micro-benchmarks (fixed-iteration timing, no criterion tree).
+[[bench]]
+name = "sim_bench"
+harness = false
