@@ -52,7 +52,10 @@ pub struct RgaSim {
 impl RgaSim {
     /// A working RGA whose `improcess` succeeds.
     pub fn new() -> Self {
-        Self { status: ImStatus::Success, blits: Vec::new() }
+        Self {
+            status: ImStatus::Success,
+            blits: Vec::new(),
+        }
     }
 
     /// Program the status `improcess` returns (set `Failed` to drive the driver's
@@ -63,7 +66,12 @@ impl RgaSim {
 
     /// Model one `improcess()` call: record it and return the programmed status.
     pub fn improcess(&mut self, src: Surface, dst: Surface, srect: Rect, drect: Rect) -> ImStatus {
-        self.blits.push(Blit { src, dst, srect, drect });
+        self.blits.push(Blit {
+            src,
+            dst,
+            srect,
+            drect,
+        });
         self.status
     }
 
@@ -99,7 +107,11 @@ mod tests {
     use super::*;
 
     fn surf(w: i32, h: i32) -> Surface {
-        Surface { width: w, height: h, format: 0 }
+        Surface {
+            width: w,
+            height: h,
+            format: 0,
+        }
     }
     fn rect(w: i32, h: i32) -> Rect {
         Rect { x: 0, y: 0, w, h }
@@ -108,7 +120,12 @@ mod tests {
     #[test]
     fn records_a_successful_blit() {
         let mut r = RgaSim::new();
-        let st = r.improcess(surf(720, 720), surf(360, 360), rect(720, 720), rect(360, 360));
+        let st = r.improcess(
+            surf(720, 720),
+            surf(360, 360),
+            rect(720, 720),
+            rect(360, 360),
+        );
         assert_eq!(st, ImStatus::Success);
         assert_eq!(r.count(), 1);
         let b = r.last().unwrap();
@@ -120,8 +137,10 @@ mod tests {
     fn failed_status_drives_fallback() {
         let mut r = RgaSim::new();
         r.set_status(ImStatus::Failed);
-        assert_eq!(r.improcess(surf(10, 10), surf(10, 10), rect(10, 10), rect(10, 10)),
-                   ImStatus::Failed);
+        assert_eq!(
+            r.improcess(surf(10, 10), surf(10, 10), rect(10, 10), rect(10, 10)),
+            ImStatus::Failed
+        );
         // the op is still recorded — the driver dispatched it, then fell back.
         assert_eq!(r.count(), 1);
     }

@@ -38,6 +38,13 @@ pub struct Finding {
     pub msg: String,
 }
 
+/// A byte that can appear inside a devicetree node/property identifier — used to
+/// require a token boundary before a `reg` property, so substrings like `reg-names`
+/// or a `region-*` node label are not matched as the `reg` property itself.
+fn is_ident_byte(b: u8) -> bool {
+    b.is_ascii_alphanumeric() || b == b'_' || b == b'-'
+}
+
 fn parse_addr(s: &str) -> Option<u64> {
     let s = s.trim();
     if let Some(hex) = s.strip_prefix("0x").or_else(|| s.strip_prefix("0X")) {
@@ -47,10 +54,33 @@ fn parse_addr(s: &str) -> Option<u64> {
     }
 }
 
-/// Does a loader entry name a coprocessor/MCU firmware (whose LOAD_ADDR matters)?
-fn is_mcu_loader(name: &str) -> bool {
+/// Loaders that are part of the normal RK boot chain — DDR init, SPL/loader, the
+/// secure monitor, U-Boot — and are NOT boot-loaded coprocessor firmware, so their
+/// LOAD_ADDR (if any) is the vendor boot flow, not a DRAM carve-out that must be
+/// reserved. Anything NOT on this allowlist that declares a LOAD_ADDR is treated as
+/// a coprocessor load and checked (**fail closed**): a future MCU named
+/// "Rtos"/"Bl32"/"M0" must not slip through an MCU-*name* allowlist the way the
+/// original `hpmcu`/`mcu`/`amp` substring test would have — that is exactly the
+/// c8a3 0x40000-brick class this tool exists to catch.
+fn is_known_safe_loader(name: &str) -> bool {
     let n = name.to_ascii_lowercase();
-    n.contains("hpmcu") || n.contains("mcu") || n.contains("amp")
+    const SAFE: &[&str] = &[
+        "flashdata",
+        "flashboot",
+        "ddr",
+        "usbplug",
+        "spl",
+        "uboot",
+        "u-boot",
+        "loader",
+        "trust",
+        "tee",
+        "atf",
+        "bl31",
+        "fsbl",
+        "idblock",
+    ];
+    SAFE.iter().any(|s| n.contains(s))
 }
 
 /// Extract MCU firmware loads from an rkbin loader `.ini`: for each `LOADERn=<name>`
@@ -72,7 +102,9 @@ pub fn parse_ini_mcu_loads(ini: &str) -> Vec<McuLoad> {
             section = sec.trim().to_string();
             continue;
         }
-        let Some((k, v)) = line.split_once('=') else { continue };
+        let Some((k, v)) = line.split_once('=') else {
+            continue;
+        };
         let (k, v) = (k.trim(), v.trim());
         if section == "LOADER_OPTION" && k.to_ascii_uppercase().starts_with("LOADER") {
             loaders.push((k.to_ascii_uppercase(), v.to_string()));
@@ -85,12 +117,19 @@ pub fn parse_ini_mcu_loads(ini: &str) -> Vec<McuLoad> {
 
     let mut out = Vec::new();
     for (loader, name) in loaders {
-        if !is_mcu_loader(&name) {
+        // Fail closed: check every loader that isn't a known-safe boot component.
+        // A benign component without a LOAD_ADDR produces nothing (the `get` below
+        // misses), so this only ever surfaces loads that actually target DRAM.
+        if is_known_safe_loader(&name) {
             continue;
         }
         // LOADER2 -> [LOADER2_PARAM]
         if let Some(&addr) = load_addrs.get(&format!("{loader}_PARAM")) {
-            out.push(McuLoad { loader, name, load_addr: addr });
+            out.push(McuLoad {
+                loader,
+                name,
+                load_addr: addr,
+            });
         }
     }
     out
@@ -129,15 +168,40 @@ pub fn parse_reserved_ranges(dt: &str) -> Vec<Range> {
             }
             j += 1;
         }
-        // scan reg = < a b > inside [start, j)
+        // scan `reg = <addr size>` PROPERTY tokens inside [start, j). Match `reg` as
+        // a whole token — identifier boundary before it, `=` after optional space —
+        // so a `reg-names` property or a `region-*@…` node label (both contain the
+        // substring "reg") is not misparsed into a bogus range.
         let block = &dt[start..j.min(dt.len())];
-        for reg in block.split("reg").skip(1) {
-            let Some(lt) = reg.find('<') else { continue };
-            let Some(gt) = reg[lt..].find('>') else { continue };
-            let nums: Vec<&str> = reg[lt + 1..lt + gt].split_whitespace().collect();
+        let bb = block.as_bytes();
+        let mut k = 0;
+        while let Some(rel) = block[k..].find("reg") {
+            let p = k + rel;
+            let end = p + 3;
+            k = end; // forward progress regardless of whether this "reg" matches
+            let before_ok = p == 0 || !is_ident_byte(bb[p - 1]);
+            let mut a = end; // first non-space byte after "reg" must be '='
+            while a < bb.len() && matches!(bb[a], b' ' | b'\t' | b'\r' | b'\n') {
+                a += 1;
+            }
+            if !(before_ok && a < bb.len() && bb[a] == b'=') {
+                continue;
+            }
+            let Some(lt_rel) = block[a..].find('<') else {
+                continue;
+            };
+            let lt = a + lt_rel;
+            let Some(gt_rel) = block[lt..].find('>') else {
+                continue;
+            };
+            let gt = lt + gt_rel;
+            let nums: Vec<&str> = block[lt + 1..gt].split_whitespace().collect();
             if nums.len() >= 2 {
-                if let (Some(a), Some(s)) = (parse_addr(nums[0]), parse_addr(nums[1])) {
-                    out.push(Range { start: a, size: s });
+                if let (Some(addr), Some(sz)) = (parse_addr(nums[0]), parse_addr(nums[1])) {
+                    out.push(Range {
+                        start: addr,
+                        size: sz,
+                    });
                 }
             }
         }
@@ -244,5 +308,56 @@ FLAG=0x10007
     fn nontb_board_always_passes() {
         let loads = parse_ini_mcu_loads(NONTB_INI);
         assert!(check(&loads, &parse_reserved_ranges(DT_NO_RTOS)).is_empty());
+    }
+
+    // A reserving node whose LABEL and a sibling property both contain "reg", with
+    // an unrelated cell property (`interrupts`) right before the real `reg`.
+    const DT_REG_SUBSTRING: &str = r#"
+        reserved-memory {
+            #address-cells = <1>;
+            #size-cells = <1>;
+            ranges;
+            region-a@40000 { interrupts = <0 43 4>; reg-names = "ctrl"; reg = <0x40000 0x3c000>; no-map; };
+        };
+    "#;
+
+    /// Regression (correctness review): `reg` must match as a whole property token,
+    /// not a bare substring — the `region-*` label, `reg-names`, and the
+    /// `interrupts` cells must NOT be misparsed into extra ranges.
+    #[test]
+    fn reg_token_not_substring() {
+        let r = parse_reserved_ranges(DT_REG_SUBSTRING);
+        assert_eq!(r.len(), 1, "only the real `reg` property is a range: {r:?}");
+        assert_eq!(r[0].start, 0x40000);
+        assert_eq!(r[0].size, 0x3c000);
+    }
+
+    // A future coprocessor loader named nothing like hpmcu/mcu/amp, at an
+    // unreserved DRAM address — the exact case an MCU-name allowlist would miss.
+    const UNKNOWN_MCU_INI: &str = r#"
+[LOADER_OPTION]
+NUM=2
+LOADER1=FlashData
+LOADER2=Rtos
+FlashData=bin/rv11/rv1106_ddr.bin
+Rtos=bin/rv11/rv1106_rtos.bin
+[LOADER2_PARAM]
+LOAD_ADDR=0x40000
+"#;
+
+    /// Regression (correctness review): fail closed. A loader that isn't a known-safe
+    /// boot component and declares a LOAD_ADDR is treated as a coprocessor load and
+    /// checked, even though its name matches no MCU keyword.
+    #[test]
+    fn unknown_coprocessor_name_is_flagged() {
+        let loads = parse_ini_mcu_loads(UNKNOWN_MCU_INI);
+        assert_eq!(
+            loads.len(),
+            1,
+            "the unknown loader must be checked: {loads:?}"
+        );
+        assert_eq!(loads[0].load_addr, 0x40000);
+        // and it's caught when no reserved-memory node covers it:
+        assert_eq!(check(&loads, &parse_reserved_ranges(DT_NO_RTOS)).len(), 1);
     }
 }

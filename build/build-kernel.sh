@@ -23,8 +23,19 @@ REPO="$(cd "$HERE/.." && pwd)"
 PATCHES="$REPO/patches"
 SHA_FILE="$HERE/linux-$KVER.tar.xz.sha256"
 JOBS="${JOBS:-$(nproc)}"
-WORK="${WORK:-$(mktemp -d "${TMPDIR:-/tmp}/warden-kbuild.XXXXXX")}"
 URL="https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-$KVER.tar.xz"
+
+# A caller-provided WORK (e.g. CI's ${{ github.workspace }}/kbuild-out, from which
+# artifacts are uploaded) is left intact; a scratch dir we mktemp'd here is our own
+# (>1GB of extracted source + build output) and is removed on exit so repeated runs
+# on the shared SDK box don't fill the disk.
+if [ -n "${WORK:-}" ]; then
+  WORK_OWNED=0
+else
+  WORK="$(mktemp -d "${TMPDIR:-/tmp}/warden-kbuild.XXXXXX")"
+  WORK_OWNED=1
+fi
+trap '[ "${WORK_OWNED:-0}" = 1 ] && rm -rf "$WORK"' EXIT
 
 log() { printf '\033[36m== %s\033[0m\n' "$*"; }
 
@@ -37,12 +48,17 @@ if [ ! -f "$TB" ]; then
   log "downloading $URL"
   curl -fSL "$URL" -o "$TB"
 fi
-if [ -f "$SHA_FILE" ]; then
-  want="$(cat "$SHA_FILE")"
-  got="$(sha256sum "$TB" | awk '{print $1}')"
-  [ "$want" = "$got" ] || { echo "tarball sha256 mismatch: want $want got $got" >&2; exit 1; }
-  log "tarball sha256 verified"
-fi
+# Fail closed: a missing pin (e.g. forgotten on a KVER bump) or a KERNEL_TARBALL
+# pointed at an arbitrary file must refuse to build, never silently skip the check
+# — the pristine tarball is the ONLY external input and integrity is the whole point.
+[ -f "$SHA_FILE" ] || {
+  echo "FATAL: no pinned sha256 for linux-$KVER (expected $SHA_FILE) — refusing to build from an unverified tarball" >&2
+  exit 1
+}
+want="$(cat "$SHA_FILE")"
+got="$(sha256sum "$TB" | awk '{print $1}')"
+[ "$want" = "$got" ] || { echo "tarball sha256 mismatch: want $want got $got" >&2; exit 1; }
+log "tarball sha256 verified"
 
 # 2. extract pristine
 SRC="$WORK/linux-$KVER"

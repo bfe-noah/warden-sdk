@@ -59,8 +59,17 @@ fn main() {
     // RGA: one improcess dispatch record (+ clear, so the log stays bounded).
     {
         let mut r = RgaSim::new();
-        let sf = Surface { width: 720, height: 720, format: 0 };
-        let rc = Rect { x: 0, y: 0, w: 720, h: 720 };
+        let sf = Surface {
+            width: 720,
+            height: 720,
+            format: 0,
+        };
+        let rc = Rect {
+            x: 0,
+            y: 0,
+            w: 720,
+            h: 720,
+        };
         bench("rga_improcess", N, || {
             let _ = r.improcess(sf, sf, rc, rc);
             r.clear();

@@ -1,5 +1,5 @@
 /*
- * The UI Freshness Contract engine (ADR 0004) — core, LVGL-free.
+ * The UI Freshness Contract engine (flare-edge ADR-0004) — core, LVGL-free.
  * See freshness.h for the contract. LVGL binding lives in freshness_lv.c.
  */
 #include "freshness.h"
@@ -175,11 +175,16 @@ uint32_t warden_fresh_count(void)
 
 uint32_t warden_fresh_min_budget_ms(void)
 {
+    /* `seen` — not `best == 0` — marks "nothing scanned yet", so a legitimate
+     * zero-tolerance binding (max_stale_ms == 0, "must be fresh every tick") wins
+     * the minimum instead of being mistaken for the empty sentinel and widened. */
     uint32_t best = 0;
+    bool seen = false;
     for(uint32_t i = 0; i < FRESH_MAX; i++) {
         struct warden_fresh *v = &s_vals[i];
-        if(v->used && v->visible && (best == 0 || v->max_stale_ms < best)) {
+        if(v->used && v->visible && (!seen || v->max_stale_ms < best)) {
             best = v->max_stale_ms;
+            seen = true;
         }
     }
     return best;

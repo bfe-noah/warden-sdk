@@ -1,5 +1,5 @@
 /*
- * The UI Freshness Contract engine (ADR 0004) — core, LVGL-free.
+ * The UI Freshness Contract engine (flare-edge ADR-0004) — core, LVGL-free.
  *
  * The panel is read on-site to judge whether hardware is healthy, so a silently
  * *stale* number is worse than a missing one: a stale IP or hashrate reads as

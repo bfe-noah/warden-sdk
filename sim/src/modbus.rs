@@ -28,7 +28,11 @@ pub fn crc16(bytes: &[u8]) -> u16 {
     for &b in bytes {
         crc ^= b as u16;
         for _ in 0..8 {
-            crc = if crc & 1 != 0 { (crc >> 1) ^ 0xA001 } else { crc >> 1 };
+            crc = if crc & 1 != 0 {
+                (crc >> 1) ^ 0xA001
+            } else {
+                crc >> 1
+            };
         }
     }
     crc
@@ -202,7 +206,11 @@ impl ModbusSlave {
         if count == 0 || count > 2000 {
             return Err(exc::ILLEGAL_DATA_VALUE);
         }
-        let bank = if discrete { &self.discrete } else { &self.coils };
+        let bank = if discrete {
+            &self.discrete
+        } else {
+            &self.coils
+        };
         if start + count > bank.len() {
             return Err(exc::ILLEGAL_DATA_ADDRESS);
         }
@@ -272,7 +280,10 @@ impl ModbusSlave {
         let start = u16::from_be_bytes([pdu[0], pdu[1]]) as usize;
         let count = u16::from_be_bytes([pdu[2], pdu[3]]) as usize;
         let bytecount = pdu[4] as usize;
-        if count == 0 || count > 1968 || bytecount != count.div_ceil(8) || pdu.len() != 5 + bytecount
+        if count == 0
+            || count > 1968
+            || bytecount != count.div_ceil(8)
+            || pdu.len() != 5 + bytecount
         {
             return Err(exc::ILLEGAL_DATA_VALUE);
         }
@@ -361,7 +372,8 @@ mod tests {
     fn coils_write_then_read() {
         let mut s = ModbusSlave::new(1, 0, 16);
         // FC05 write single coil 3 = ON
-        s.handle_frame(&request(1, &[0x05, 0, 3, 0xFF, 0x00])).unwrap();
+        s.handle_frame(&request(1, &[0x05, 0, 3, 0xFF, 0x00]))
+            .unwrap();
         assert!(s.coil(3));
         // FC01 read coils 0..8 -> bit 3 set => byte 0x08
         let resp = s.handle_frame(&request(1, &[0x01, 0, 0, 0, 8])).unwrap();

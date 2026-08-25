@@ -16,6 +16,11 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege by default: every job gets a read-only token; only `badges`
+# (which commits rendered SVGs) overrides this with contents: write below.
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -34,7 +39,7 @@ jobs:
           done
       - name: coverage (cargo-llvm-cov on sim)
         run: rustup component add llvm-tools-preview
-      - uses: taiki-e/install-action@v2
+      - uses: taiki-e/install-action@b6ff580856c41316412a0b9b60540fbc6f8c82cc # v2.86.7
         with:
           tool: cargo-llvm-cov
       - name: run coverage
