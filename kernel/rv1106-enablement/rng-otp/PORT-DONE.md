@@ -21,7 +21,9 @@ rv1106's clock/reset names need no special handling.) Kconfig
 `dd if=/dev/hwrng bs=16` → `c697 503d f9db 6b84 50e4 e1ee f232 b2ae` (real HW
 entropy, non-zero). Hardware entropy source for the panel's crypto/keys.
 
-## OTP / nvmem — 🔨 device registers; read fn corrected, re-verify pending
+## OTP / nvmem — ✅ VERIFIED on warden-c8a3 (2026-08-25)
+Reads real data: `dd .../rockchip-otp0/nvmem bs=1 count=16 | xxd` →
+`5211 02fe 084d 5231 0000 0000 3b15 0000` (contains "MR1" chip id) — no timeout.
 Mainline `drivers/nvmem/rockchip-otp.c` gains an `rv1106_data` + compatible.
 
 **Delta:**
@@ -43,5 +45,4 @@ Kconfig `NVMEM_ROCKCHIP_OTP=y`. **DT:** `&otp { status = "okay"; };` (the dtsi
 **First try** used `.reg_read = rk3588_otp_read` → `timeout during read setup`
 (rk3588 uses a different addressing path). Corrected to `px30_otp_read` — the
 mainline user-mode OTPC_USER read, the same sequence the vendor 5.10 driver used
-for rv1106 (its `rk3568_otp_read`). Re-verify cell reads on the next _b boot;
-`rockchip-otp0` nvmem device already registers.
+for rv1106 (its `rk3568_otp_read`). Confirmed: cell reads return real data.
