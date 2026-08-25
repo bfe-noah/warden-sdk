@@ -54,7 +54,7 @@ fn parse_addr(s: &str) -> Option<u64> {
     }
 }
 
-/// Loaders that are part of the normal RK boot chain — DDR init, SPL/loader, the
+/// Loaders that are part of the normal RK boot chain — DDR init, SPL/miniloader, the
 /// secure monitor, U-Boot — and are NOT boot-loaded coprocessor firmware, so their
 /// LOAD_ADDR (if any) is the vendor boot flow, not a DRAM carve-out that must be
 /// reserved. Anything NOT on this allowlist that declares a LOAD_ADDR is treated as
@@ -62,17 +62,33 @@ fn parse_addr(s: &str) -> Option<u64> {
 /// "Rtos"/"Bl32"/"M0" must not slip through an MCU-*name* allowlist the way the
 /// original `hpmcu`/`mcu`/`amp` substring test would have — that is exactly the
 /// c8a3 0x40000-brick class this tool exists to catch.
+///
+/// Matched as a WHOLE normalized name (separators stripped), never a substring, so a
+/// coprocessor whose vendor name merely *contains* a boot-chain word — "AudioLoader"
+/// ⊃ "loader", "SplRtos" ⊃ "spl", "Bl32" (≠ "bl31") — is still checked, not waved
+/// through. Over-inclusion here would only over-report (the safe direction); a missed
+/// coprocessor is the dangerous one.
 fn is_known_safe_loader(name: &str) -> bool {
-    let n = name.to_ascii_lowercase();
+    let n: String = name
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .map(|c| c.to_ascii_lowercase())
+        .collect();
     const SAFE: &[&str] = &[
         "flashdata",
         "flashboot",
+        "nandboot",
+        "nandboot1",
+        "nandboot2",
+        "sdboot",
+        "emmcboot",
+        "spinorboot",
         "ddr",
         "usbplug",
         "spl",
         "uboot",
-        "u-boot",
         "loader",
+        "miniloader",
         "trust",
         "tee",
         "atf",
@@ -80,7 +96,7 @@ fn is_known_safe_loader(name: &str) -> bool {
         "fsbl",
         "idblock",
     ];
-    SAFE.iter().any(|s| n.contains(s))
+    SAFE.contains(&n.as_str())
 }
 
 /// Extract MCU firmware loads from an rkbin loader `.ini`: for each `LOADERn=<name>`
@@ -359,5 +375,38 @@ LOAD_ADDR=0x40000
         assert_eq!(loads[0].load_addr, 0x40000);
         // and it's caught when no reserved-memory node covers it:
         assert_eq!(check(&loads, &parse_reserved_ranges(DT_NO_RTOS)).len(), 1);
+    }
+
+    // Coprocessor names that merely *contain* a safe boot-chain word, each with a
+    // LOAD_ADDR: "AudioLoader" ⊃ "loader", "SplRtos" ⊃ "spl", "Bl32" (≠ "bl31").
+    const SUBSTRING_TRAP_INI: &str = r#"
+[LOADER_OPTION]
+NUM=4
+LOADER1=FlashData
+LOADER2=AudioLoader
+LOADER3=SplRtos
+LOADER4=Bl32
+FlashData=bin/ddr.bin
+AudioLoader=bin/audio.bin
+SplRtos=bin/rtos.bin
+Bl32=bin/bl32.bin
+[LOADER2_PARAM]
+LOAD_ADDR=0x50000
+[LOADER3_PARAM]
+LOAD_ADDR=0x60000
+[LOADER4_PARAM]
+LOAD_ADDR=0x70000
+"#;
+
+    /// Regression (2nd-pass correctness review): the safe allowlist matches a WHOLE
+    /// normalized name, never a substring — a coprocessor whose name contains a
+    /// boot-chain word must NOT be waved through. FlashData (a real boot component,
+    /// no LOAD_ADDR here) stays safe; the three coprocessors are all checked.
+    #[test]
+    fn safe_loader_is_whole_name_not_substring() {
+        let loads = parse_ini_mcu_loads(SUBSTRING_TRAP_INI);
+        let mut addrs: Vec<u64> = loads.iter().map(|l| l.load_addr).collect();
+        addrs.sort();
+        assert_eq!(addrs, vec![0x50000, 0x60000, 0x70000], "loads: {loads:?}");
     }
 }

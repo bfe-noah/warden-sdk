@@ -31,7 +31,7 @@ is already modelled and tested here** in `../sim/`:
 
 | Driver | Serious-testing status | SDK model |
 |---|---|---|
-| `modbus_engine.c` (RS485 master) | 11 pty scenarios + fault-injection + a compiled corpus walk (flare-edge `tools/modbus-sim/`, green) | `sim::modbus` RTU slave (11 tests, silent-drop/forced-NAK faults) + `modbus_read_holding` benchmark |
+| `modbus_engine.c` (RS485 master) | 8 pty scenarios + 3 wire/daemon checks (11 total) + fault-injection (flare-edge `tools/modbus-sim/`, green) | `sim::modbus` RTU slave (11 tests, silent-drop/forced-NAK faults) + `modbus_read_holding` benchmark |
 | `warden_rga.c` (RGA offload) | offload-dispatch + CPU-fallback logic | `sim::rga` recording `improcess` fake (programmable IM_STATUS) + `rga_improcess` benchmark |
 | HPMCU supervisor (`hpmcu.rs`) | arm/beat/fire + boot-grace safety property | `sim::hpmcu` (7 tests) + `hpmcu_tick` benchmark |
 
