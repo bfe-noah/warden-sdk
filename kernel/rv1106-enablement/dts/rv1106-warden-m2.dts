@@ -39,9 +39,8 @@
 		stdout-path = "serial2:115200n8";
 		/*
 		 * earlycon with no baud = reuse the divisor the bootloader left in
-		 * uart2, so the first prints work regardless of our clock tree. The ttyS console is
-		 * pinned to 115200 to stay readable on the CP2102 bench adapter;
-		 * production WardenOS uses 1.5M.
+		 * uart2, so the first prints work regardless of our clock tree. The
+		 * ttyS console rate (1.5M) is PORT-VERIFY against the board.
 		 */
 		bootargs = "earlycon=uart8250,mmio32,0xff4c0000 console=ttyS2,115200n8 earlyprintk rootwait";
 	};
@@ -121,6 +120,26 @@
 		clock-frequency = <24000000>;
 		clocks = <&cru SCLK_UART2>, <&cru PCLK_UART2>;
 		clock-names = "baudclk", "apb_pclk";
+		status = "okay";
+	};
+
+	/* M3: the eMMC (dw_mmc). Lets the kernel enumerate mmcblk0 and mount an
+	 * ext4 rootfs. ciu-drive/ciu-sample clocks come from grf_cru, so the
+	 * grf-clock-controller node above is a hard dependency. */
+	emmc: mmc@ffa90000 {
+		compatible = "rockchip,rv1106-dw-mshc", "rockchip,rk3288-dw-mshc";
+		reg = <0xffa90000 0x4000>;
+		interrupts = <GIC_SPI 48 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&cru HCLK_EMMC>, <&cru CCLK_SRC_EMMC>,
+			 <&grf_cru SCLK_EMMC_DRV>, <&grf_cru SCLK_EMMC_SAMPLE>;
+		clock-names = "biu", "ciu", "ciu-drive", "ciu-sample";
+		fifo-depth = <0x100>;
+		max-frequency = <200000000>;
+		rockchip,use-v2-tuning;
+		bus-width = <8>;
+		non-removable;
+		cap-mmc-highspeed;
+		mmc-hs200-1_8v;
 		status = "okay";
 	};
 };

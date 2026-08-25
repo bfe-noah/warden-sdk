@@ -84,8 +84,19 @@ pre-MMU), then fixed:
 CP2102 bench adapter — so the M2 DT pins 115200 for readable bring-up; production
 overrides to 1.5M.
 
-## Next (M3)
+## M3 (same session): ✅ the full WardenOS runs on the 6.18 kernel
 
-The kernel mounts the 5.10 rootfs_b but the userspace/modules are 5.10 (vermagic
-mismatch). M3: lean RV1106 defconfig, `dw_mmc`/`sdhci` DT (eMMC already probes —
-`MMC0: HS200`), and our Buildroot userspace rebuilt on 6.18.
+Adding the eMMC `dw_mmc` node (`mmc@ffa90000`, clocks from cru + grf_cru) was the
+only change M3 needed — the mmc/ext4 drivers are already in-config. The kernel
+enumerated the eMMC at HS200, mounted the ext4 rootfs, ran `/sbin/init`, and
+started every WardenOS daemon. A serial root login confirms `uname -a` →
+`Linux warden-c8a3 6.18.46 armv7l`, with `warden-flared/-modbus/-mikrotik/-asic/
+-ui/-flight` all running. Expected M4/M5 gaps show cleanly: the 5.10 aic8800 `.ko`
+won't load (vermagic → M5), and there's no backlight/framebuffer yet (→ M4).
+
+**Console lesson applied:** with `console=ttyS2,115200` the whole boot is readable
+on the CP2102 (the 1.5M vendor rate is garbage on it). Serial login uses the same
+`c8a3_run.py` root/root helper as the 5.10 firmware — the userspace is unchanged.
+
+Next: M4 (VOP2 display + panel + touch), M5 (AIC8800 SDIO port + our 4 patches),
+M6 (RGA/watchdog/HPMCU/USB-OTG); plus a lean defconfig + Buildroot-on-6.18 cleanup.
