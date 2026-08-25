@@ -187,3 +187,14 @@
 &rga2 {
 	status = "okay";
 };
+
+/* --- batch A: hardware RNG (trngv1, same IP as rk3588) --- */
+&rng {
+	compatible = "rockchip,rv1106-rng";
+	status = "okay";
+};
+
+/* --- batch A: OTP / nvmem (chip id, MAC, PHY bandgap for GMAC) --- */
+&otp {
+	status = "okay";
+};
