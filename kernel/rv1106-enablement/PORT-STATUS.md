@@ -95,11 +95,35 @@ Three bring-up bugs were found and fixed on hardware, all captured in the DT:
 comes up far enough to clock the UART and the arch timer on hardware. A wrong CPU
 mux/PLL would show later (cpufreq / peripheral rates), still to be checked.
 
-## M3 — rootfs boot: NEXT
-The M2 kernel mounts the 5.10 WardenOS rootfs_b but the userspace/module vermagic
-mismatches (5.10 `.ko` won't load on 6.18). M3 = a lean RV1106 defconfig (drop
-multi_v7), `dw_mmc`/`sdhci` DT wired to our CRU (eMMC already probes — `MMC0: HS200`),
-and our Buildroot userspace rebuilt against 6.18. Then M4 display, M5 wifi, M6 rest.
+## M3 — rootfs boot: ✅ DONE — the full WardenOS runs on the 6.18 kernel (2026-08-24)
+Adding the eMMC (`dw_mmc`) node to the DT was all M3 needed — the drivers are already
+in the config. On hardware:
+```
+dwmmc_rockchip ffa90000.mmc: Version ID is 270a       ← our dw_mmc bound
+mmc0: new HS200 MMC card ... mmcblk0: 8GTF4R 7.28 GiB  ← eMMC at HS200 (198 MHz)
+mmcblk0: p1(env)...p10(rootfs_b)...p12(userdata)      ← partitions enumerated
+EXT4-fs (mmcblk0p10): mounted ... VFS: Mounted root    ← ext4 rootfs mounted
+Run /sbin/init as init process
+Starting warden-modbus / -mikrotik / -asic / -flared / Warden UI
+```
+A root shell over the serial console confirms it: `uname -a` → **`Linux warden-c8a3
+6.18.46 armv7l`**, with `warden-flared`, `warden-modbus`, `warden-mikrotik`,
+`warden-asic`, `warden-ui`, `warden-flight` all in `ps`. The eMMC node's ciu-drive/
+ciu-sample clocks come from `grf_cru`, so the M2 grf-cru fix was a prerequisite.
+
+The expected M4/M5 gaps show as clean failures: the out-of-tree 5.10 `aic8800`
+wifi/BT `.ko` won't load on 6.18 (vermagic — needs the driver ported, **M5**), and
+`warden-ui: no backlight device` (no display/VOP node yet — **M4**).
+
+## M4/M5/M6 — NEXT
+- **M4 display**: VOP2 + the RGB666 720×720 panel + GT911 touch + PWM backlight →
+  the LVGL UI renders (the UI process already runs, it just has no framebuffer).
+- **M5 wifi**: port the AIC8800 SDIO driver to 6.18 (+ the Tier-1 fix) so wlan0/usb0
+  come back; re-apply our 4 kernel patches.
+- **M6**: RGA, watchdog, HPMCU coprocessor, USB-OTG dual role.
+- **Cleanup**: a lean RV1106 defconfig to replace multi_v7 (shrinks the image, retires
+  the fdt-high workaround) + our Buildroot userspace rebuilt on 6.18 (retires the
+  vermagic-mismatched modules).
 
 ## Upstream tracking (decision 2026-08-23)
 Base stays the vendor forward-port (applies to 6.18; we control it). The unmerged upstream
