@@ -13,7 +13,7 @@ what runs on real silicon versus what we simulate.
 
 > Status: **bringup.** The hardware **simulator** and its tests, the RV1106 kernel
 > forward-port as a reviewable `patches/` series, the hermetic kernel build, and two
-> Tier-1 drivers at 100% MC/DC are all in and CI-green on the `bringup` branch. What
+> Tier-1 drivers at 100% MC/DC are all in and CI-green on `main`. What
 > remains before this is on the production build path: installing the self-hosted
 > kernel-build runner (see `docs/ci-cd.md`) and having flare-edge consume warden-sdk
 > as a dependency — both Noah-gated. Until then, flare-edge still builds firmware from

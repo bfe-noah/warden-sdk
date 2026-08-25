@@ -12,7 +12,7 @@
 | `bench` | ubuntu-latest | Smoke-runs the sim micro-benchmarks; emits ns/op trend JSON. |
 | `patches-apply` | ubuntu-latest | Fetches pristine linux-6.18.46 (cached, sha256-verified) and applies `patches/*` in order. |
 | `kernel-build` | **[self-hosted, warden-sdk]** | `build/build-kernel.sh` → `zImage` + `rv1106-warden.dtb`, uploaded as an artifact. Dispatch-gated until the runner is fully provisioned (below). |
-| `badges` | ubuntu-latest | Renders loc/tests/coverage shields on push to `bringup` (`[skip ci]` + `paths-ignore` loop guard). |
+| `badges` | ubuntu-latest | Renders loc/tests/coverage shields on push to `main` (`[skip ci]` + `paths-ignore` loop guard). |
 
 ## The self-hosted runner (`bfe-mpc-0640`)
 
