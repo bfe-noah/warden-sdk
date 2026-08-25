@@ -49,6 +49,25 @@ jobs:
           echo "coverage=$pct" >> "$GITHUB_OUTPUT"
           echo "tests passed: $passed | sim line coverage: ${pct}%"
 
+  mcdc:
+    # 100% MC/DC (condition coverage) enforced on every Tier-1 driver harness.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: install gcc-14
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq gcc-14
+      - name: enforce 100% MC/DC on drivers/*/test
+        run: |
+          fail=0; ran=0
+          for t in drivers/*/test; do
+            [ -f "$t/Makefile" ] || continue
+            ran=1
+            echo "== MC/DC: $t =="
+            make -C "$t" check CC=gcc-14 GCOV=gcov-14 || fail=1
+          done
+          [ "$ran" = 1 ] || { echo "no driver MC/DC harnesses found"; exit 1; }
+          exit $fail
+
   badges:
     needs: [test]
     if: github.event_name == 'push' && github.ref == 'refs/heads/bringup'
