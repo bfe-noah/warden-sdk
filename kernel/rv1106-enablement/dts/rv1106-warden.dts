@@ -59,3 +59,72 @@
 &wdt {
 	status = "okay";
 };
+
+/* --- M4: display (VOP + RGB → 720x720 panel + PWM backlight) --- */
+&display_subsystem {
+	status = "okay";
+};
+
+&vop {
+	status = "okay";
+	/* mainline rockchip_drm_vop requests named "ahb" + "dclk" resets that the
+	 * vendor node omits; without them vop_bind fails "failed to get ahb reset". */
+	resets = <&cru SRST_H_VOP>, <&cru SRST_D_VOP>;
+	reset-names = "ahb", "dclk";
+};
+
+/* mainline wires vop_out straight to the panel (no separate rgb node) */
+&vop_out_rgb {
+	remote-endpoint = <&panel_in_vop>;
+};
+
+&pwm1 {
+	status = "okay";
+	pinctrl-names = "active";
+	pinctrl-0 = <&pwm1m2_pins>;
+};
+
+/ {
+	backlight: backlight {
+		compatible = "pwm-backlight";
+		pwms = <&pwm1 0 100000 50000>;
+		brightness-levels = <0 32 64 96 128 160 192 224 255>;
+		default-brightness-level = <8>;
+		status = "okay";
+	};
+
+	panel: panel {
+		compatible = "panel-dpi";
+		backlight = <&backlight>;
+		width-mm = <85>;
+		height-mm = <85>;
+
+		panel-timing {
+			clock-frequency = <30000000>;
+			hactive = <720>;
+			vactive = <720>;
+			hback-porch = <44>;
+			hfront-porch = <46>;
+			vback-porch = <18>;
+			vfront-porch = <16>;
+			hsync-len = <2>;
+			vsync-len = <2>;
+			hsync-active = <0>;
+			vsync-active = <0>;
+			de-active = <0>;
+			pixelclk-active = <0>;
+		};
+
+		port {
+			panel_in_vop: endpoint {
+				remote-endpoint = <&vop_out_rgb>;
+			};
+		};
+	};
+};
+
+/* the vendor rgb bridge node has no 6.18 driver and its dangling endpoint
+ * corrupts the vop->panel of_graph; disable it so the graph is clean. */
+&rgb {
+	status = "disabled";
+};
