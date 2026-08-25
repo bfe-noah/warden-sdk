@@ -1,0 +1,107 @@
+diff --git a/drivers/gpu/drm/panel/panel-simple.c b/drivers/gpu/drm/panel/panel-simple.c
+index ef1c4b929..1b286f081 100644
+--- a/drivers/gpu/drm/panel/panel-simple.c
++++ b/drivers/gpu/drm/panel/panel-simple.c
+@@ -476,6 +476,26 @@ static struct panel_desc *panel_dpi_probe(struct device *dev)
+ 	drm_bus_flags_from_videomode(&vm, &bus_flags);
+ 	desc->bus_flags = bus_flags;
+ 
++	/*
++	 * Optional bus-format (a MEDIA_BUS_FMT_* code, e.g. RGB666_1X18) so the
++	 * RGB/parallel output can be configured for the panel's real data width.
++	 * Upstream panel-dpi doesn't read this, but a parallel RGB panel with no
++	 * bus_format leaves the encoder guessing and the screen black. Match the
++	 * vendor bindings, which carry bus-format on the panel node. Derive bpc
++	 * from the width so panel-simple's {6,8} check is satisfied.
++	 */
++	if (!of_property_read_u32(np, "bus-format", &desc->bus_format)) {
++		switch (desc->bus_format) {
++		case MEDIA_BUS_FMT_RGB666_1X18:
++		case MEDIA_BUS_FMT_RGB666_1X24_CPADHI:
++			desc->bpc = 6;
++			break;
++		default:
++			desc->bpc = 8;
++			break;
++		}
++	}
++
+ 	/* We do not know the connector for the DT node, so guess it */
+ 	desc->connector_type = DRM_MODE_CONNECTOR_DPI;
+ 
+diff --git a/drivers/gpu/drm/rockchip/rockchip_drm_vop.c b/drivers/gpu/drm/rockchip/rockchip_drm_vop.c
+index ba6b0528d..f678ad891 100644
+--- a/drivers/gpu/drm/rockchip/rockchip_drm_vop.c
++++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop.c
+@@ -1406,7 +1406,19 @@ static void vop_crtc_atomic_enable(struct drm_crtc *crtc,
+ 
+ 	switch (s->output_type) {
+ 	case DRM_MODE_CONNECTOR_LVDS:
+-		VOP_REG_SET(vop, output, rgb_dclk_pol, 1);
++		/*
++		 * WardenOS 86-Panel (RV1106 internal parallel RGB): the panel
++		 * latches pixel data on the NON-inverted dclk edge. Mainline
++		 * hardcodes rgb_dclk_pol=1 here (inverted), which makes the
++		 * panel sample RGB on the wrong clock edge -> fully healthy
++		 * pipeline (connector connected, VOP streaming, backlight on)
++		 * but a physically BLACK screen. Verified by reading the working
++		 * vendor-5.10 _a slot's VOP register PX30_DSP_CTRL0 (0xff990020)
++		 * on real hardware: rgb_dclk_pol (bit1) = 0. The vendor 5.10 VOP
++		 * driver derives this as (bus_flags & PIXDATA_DRIVE_NEGEDGE)?1:0,
++		 * which resolves to 0 for this panel. Match that.
++		 */
++		VOP_REG_SET(vop, output, rgb_dclk_pol, 0);
+ 		VOP_REG_SET(vop, output, rgb_pin_pol, pin_pol);
+ 		VOP_REG_SET(vop, output, rgb_en, 1);
+ 		break;
+diff --git a/drivers/gpu/drm/rockchip/rockchip_vop_reg.c b/drivers/gpu/drm/rockchip/rockchip_vop_reg.c
+index d1f788763..e0d09595f 100644
+--- a/drivers/gpu/drm/rockchip/rockchip_vop_reg.c
++++ b/drivers/gpu/drm/rockchip/rockchip_vop_reg.c
+@@ -1232,6 +1232,37 @@ static const struct vop_data rv1126_vop = {
+ 	.lut_size = 1024,
+ };
+ 
++/*
++ * RV1106 VOP: the same RV-series "lite" VOP as rv1126 (VOP_VERSION 2.0xc vs
++ * 2.0xb), so it reuses rv1126's register sub-structs. Only the version and the
++ * smaller max raster differ. Ported for the WardenOS 86-Panel (720x720 RGB).
++ */
++/*
++ * RV1106 uses WIN1 as its (only) primary scanout plane -- see px30_win1_data.
++ * The vendor rv1106_vop_win_data is { NULL-win0, win1-primary }; mirror that
++ * as a single primary win1 here (mainline registers one plane per non-NULL
++ * entry). Reusing rv1126's { win0-overlay, win2-primary } set left the panel
++ * black because WIN2 does not drive this SoC's RGB output.
++ */
++static const struct vop_win_data rv1106_vop_win_data[] = {
++	{ .base = 0x00, .phy = &px30_win1_data,
++	  .type = DRM_PLANE_TYPE_PRIMARY },
++};
++
++static const struct vop_data rv1106_vop = {
++	.version = VOP_VERSION(2, 0xc),
++	.feature = VOP_FEATURE_INTERNAL_RGB,	/* RV1106 drives a parallel-RGB panel */
++	.intr = &px30_intr,
++	.common = &rv1126_common,
++	.modeset = &rv1126_modeset,
++	.output = &rv1126_output,
++	.misc = &rv1126_misc,
++	.win = rv1106_vop_win_data,
++	.win_size = ARRAY_SIZE(rv1106_vop_win_data),
++	.max_output = { 1280, 1280 },
++	.lut_size = 1024,
++};
++
+ static const struct of_device_id vop_driver_dt_match[] = {
+ 	{ .compatible = "rockchip,rk3036-vop",
+ 	  .data = &rk3036_vop },
+@@ -1261,6 +1292,8 @@ static const struct of_device_id vop_driver_dt_match[] = {
+ 	  .data = &rk3328_vop },
+ 	{ .compatible = "rockchip,rv1126-vop",
+ 	  .data = &rv1126_vop },
++	{ .compatible = "rockchip,rv1106-vop",
++	  .data = &rv1106_vop },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, vop_driver_dt_match);

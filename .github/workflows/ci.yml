@@ -81,6 +81,49 @@ jobs:
           echo "== timings =="; cat bench.txt
           echo "== trend json =="; grep '"bench"' bench.json
 
+  patches-apply:
+    # The RV1106 series must apply cleanly onto pristine linux-6.18.46.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: cache pristine kernel tarball
+        uses: actions/cache@v4
+        with:
+          path: ~/linux-6.18.46.tar.xz
+          key: linux-6.18.46-tarball
+      - name: fetch + verify pristine
+        run: |
+          [ -f ~/linux-6.18.46.tar.xz ] || \
+            curl -fSL https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.18.46.tar.xz -o ~/linux-6.18.46.tar.xz
+          echo "$(cat build/linux-6.18.46.tar.xz.sha256)  $HOME/linux-6.18.46.tar.xz" | sha256sum -c -
+      - name: apply the series in order
+        run: |
+          tar -C /tmp -xf ~/linux-6.18.46.tar.xz
+          for p in patches/*.patch; do
+            git -C /tmp/linux-6.18.46 apply --whitespace=nowarn "$GITHUB_WORKSPACE/$p" \
+              && echo "applied $p" || { echo "FAILED to apply $p"; exit 1; }
+          done
+          echo "full series applied cleanly onto pristine 6.18.46"
+
+  kernel-build:
+    # Full hermetic build on the warden-sdk self-hosted runner (bfe-mpc-0640,
+    # ADR-0004). Gated on manual dispatch until that runner is registered.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: [self-hosted, warden-sdk]
+    steps:
+      - uses: actions/checkout@v4
+      - name: build zImage + rv1106-warden.dtb
+        env:
+          WORK: ${{ github.workspace }}/kbuild-out
+        run: bash build/build-kernel.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kernel-rv1106
+          path: |
+            ${{ github.workspace }}/kbuild-out/linux-6.18.46/arch/arm/boot/zImage
+            ${{ github.workspace }}/kbuild-out/linux-6.18.46/arch/arm/boot/dts/rockchip/rv1106-warden.dtb
+          retention-days: 14
+
   badges:
     needs: [test]
     if: github.event_name == 'push' && github.ref == 'refs/heads/bringup'

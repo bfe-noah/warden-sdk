@@ -1,0 +1,25 @@
+diff --git a/drivers/mailbox/rockchip-mailbox.c b/drivers/mailbox/rockchip-mailbox.c
+index 4d966cb2e..31c5a693f 100644
+--- a/drivers/mailbox/rockchip-mailbox.c
++++ b/drivers/mailbox/rockchip-mailbox.c
+@@ -155,7 +155,20 @@ static const struct rockchip_mbox_data rk3368_drv_data = {
+ 	.num_chans = 4,
+ };
+ 
++/*
++ * RV1106's mailbox IP is register-identical to rk3368's, but the SoC wires a
++ * single shared interrupt (GIC_SPI 1) rather than one IRQ per channel. The
++ * per-channel-IRQ probe loop below would fail requesting IRQ index 1, so
++ * declare a single channel (channel 0) — which is all the A7<->HPMCU doorbell
++ * needs. (Matched ahead of the rk3368 fallback via the more-specific
++ * "rockchip,rv1106-mailbox" compatible the DT node also carries.)
++ */
++static const struct rockchip_mbox_data rv1106_drv_data = {
++	.num_chans = 1,
++};
++
+ static const struct of_device_id rockchip_mbox_of_match[] = {
++	{ .compatible = "rockchip,rv1106-mailbox", .data = &rv1106_drv_data},
+ 	{ .compatible = "rockchip,rk3368-mailbox", .data = &rk3368_drv_data},
+ 	{ },
+ };

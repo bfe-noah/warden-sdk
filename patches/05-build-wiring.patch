@@ -1,0 +1,28 @@
+diff --git a/drivers/Kconfig b/drivers/Kconfig
+index 4915a6386..f6d41eb71 100644
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -113,6 +113,8 @@ source "drivers/video/Kconfig"
+ 
+ source "drivers/accel/Kconfig"
+ 
++source "drivers/rknpu/Kconfig"
++
+ source "sound/Kconfig"
+ 
+ source "drivers/hid/Kconfig"
+diff --git a/drivers/Makefile b/drivers/Makefile
+index 8e1ffa435..82ed17463 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -67,6 +67,10 @@ obj-y				+= iommu/
+ # gpu/ comes after char for AGP vs DRM startup and after iommu
+ obj-y				+= gpu/
+ 
++# rknpu registers a classic DRM device (not drivers/accel/) -- must come
++# after gpu/ for the same reason (DRM core needs to be ready first).
++obj-$(CONFIG_ROCKCHIP_RKNPU)	+= rknpu/
++
+ obj-$(CONFIG_CONNECTOR)		+= connector/
+ 
+ # i810fb depends on char/agp/
