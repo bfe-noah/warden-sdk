@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# AICSemi AIC8800DC SDIO WiFi+BT driver (WardenOS M5 port).
+#
+# Ported from the vendor 5.10.160 out-of-tree source
+# (flare-edge/sdk/sysdrv/drv_ko/wifi/aic8800dc/) — see
+# warden-sdk/kernel/rv1106-enablement/wifi/PORT-PLAN.md and PORT-PROGRESS.md.
+# Built-in only (=y): the 6.18 rootfs has no working module-loading pipeline
+# yet, so these default to y rather than the vendor's default-n/tristate.
+
+config AIC_WLAN_SUPPORT
+	bool "AIC wireless Support"
+	default y
+	help
+	  This is support for the AIC wireless chip (AIC8800DC SDIO combo
+	  wifi+BT on the WardenOS 86-Panel).
+
+config AIC_FW_PATH
+	depends on AIC_WLAN_SUPPORT
+	string "Firmware & config file path"
+	default "/oem/usr/ko/aic8800dc_fw"
+	help
+	  Path to the firmware & config files. The driver reads these
+	  directly (not via request_firmware()) — see PORT-PLAN.md §3.8.
+
+if AIC_WLAN_SUPPORT
+source "drivers/net/wireless/aic8800/aic8800_fdrv/Kconfig"
+source "drivers/net/wireless/aic8800/aic8800_btlpm/Kconfig"
+endif
