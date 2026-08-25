@@ -1,7 +1,7 @@
 # Rust
 target/
 **/target/
-Cargo.lock
+# Cargo.lock IS committed (reproducible builds; CI uses --locked).
 
 # build artifacts (firmware/kernel objects are rebuilt from source)
 *.o
