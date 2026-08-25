@@ -30,6 +30,17 @@
 		pinctrl-names = "default";
 		reset-gpios = <&gpio1 RK_PA2 GPIO_ACTIVE_LOW>;
 	};
+
+	/* SARADC voltage reference (1.8V) — the driver reads this for scale;
+	   without it saradc probes -22 (regulator_get_voltage on the dummy). */
+	vcc_1v8: vcc-1v8 {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc_1v8";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+	};
 };
 
 /* --- console --- */
@@ -76,6 +87,7 @@
 };
 
 &saradc {
+	vref-supply = <&vcc_1v8>;
 	status = "okay";
 };
 
