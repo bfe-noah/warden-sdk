@@ -215,3 +215,33 @@
 &gmac {
 	status = "okay";
 };
+
+/* --- audio: i2s0_8ch (DAI) -> acodec (analog codec) -> speaker/headphone,
+ * tied together by a simple-audio-card. Matches the vendor 86-Panel wiring
+ * in rv1106-luckfox-pico-86panel-ipc.dtsi. The digital speaker modulator
+ * (dsm) driver is ported and builds, but is left disabled here: the panel
+ * uses the acodec path only, and the vendor board itself ships dsm
+ * disabled. --- */
+&acodec {
+	#sound-dai-cells = <0>;
+	status = "okay";
+};
+
+&dsm {
+	status = "disabled";
+};
+
+/ {
+	acodec_sound: acodec-sound {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "rv1106-acodec";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,mclk-fs = <256>;
+		simple-audio-card,cpu {
+			sound-dai = <&i2s0_8ch>;
+		};
+		simple-audio-card,codec {
+			sound-dai = <&acodec>;
+		};
+	};
+};

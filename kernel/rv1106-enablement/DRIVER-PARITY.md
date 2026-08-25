@@ -40,7 +40,8 @@ c8a3, not just compiled.
 | AIC8800 BT (btlpm) | aic8800_btlpm | **out-of-tree** | 🔨 module built (6.18 vermagic); HCI bring-up not yet exercised |
 | NPU (rknpu, ff660000) | rknpu, ff660000.npu | **out-of-tree** | ⬜ M6 — plan: `npu/PORT-PLAN.md` |
 | RGA 2D (rga2) | rga2 | ported (vendor char-dev) | ✅ /dev/rga, hw 3.3.87975 |
-| I2S audio (i2s-tdm) | i2s | rv1126 fallback | 🔨 DAI built; needs acodec+card |
+| I2S audio (i2s-tdm) | i2s | rv1126 fallback (=y) | ✅ cpu DAI registers (part of the card below) |
+| Audio codec (acodec) | rockchip,rv1106-codec | ported (rv1106_codec.c) | ✅ card `rv1106-acodec`, pcmC0D0p/c (`audio/`); audible test @ bench |
 | FIQ debugger (ttyFIQ0) | fiq_glue | rockchip | ⬜ optional (we use ttyS2) |
 
 Legend: ✅ verified on hardware · 🔨 built, not yet verified · ⬜ not started.
