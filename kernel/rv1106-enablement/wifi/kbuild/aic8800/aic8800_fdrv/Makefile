@@ -10,12 +10,13 @@
 # restored: rwnx_tx.c's NL80211_IFTYPE_MESH_POINT switch-case is not
 # preprocessor-gated, so rwnx_mesh.h's types/prototypes are needed to
 # compile even though this board never creates a mesh-type interface.
-# md5.o is dropped from THIS module's object list only: it is byte-identical
-# to aic8800_bsp's
-# md5.c (same non-static MD5Init/MD5Update/... symbols) and, unlike the
-# old separate .ko world, both drivers now link into one vmlinux — keeping
-# both objects would be a multiple-definition link error. aic8800_bsp
-# links first (../Makefile) so fdrv's calls resolve against its md5.o.
+# md5.o: fdrv carries its OWN copy (vendor ships md5.c in both aic8800_bsp/ and
+# aic8800_fdrv/). As separate modules each .ko needs its own MD5 — bsp does not
+# EXPORT_SYMBOL(MD5Init/...), so fdrv.ko cannot resolve them from aic8800_bsp.ko
+# (modpost: "MD5Final undefined"). The two copies are byte-identical and live in
+# separate module namespaces, so there is no collision. (When these were briefly
+# built =y this object was dropped to avoid a vmlinux multiple-definition; the
+# module build restores it.)
 
 ccflags-y += -DCONFIG_RWNX_FULLMAC
 ccflags-y += -DAICWF_SDIO_SUPPORT
@@ -60,6 +61,7 @@ ccflags-y += -Wno-implicit-fallthrough -Wno-unused-function -Wno-unused-variable
 
 obj-$(CONFIG_AIC8800_WLAN_SUPPORT) += aic8800_fdrv.o
 aic8800_fdrv-y := \
+	md5.o \
 	rwnx_msg_tx.o \
 	rwnx_msg_rx.o \
 	rwnx_utils.o \

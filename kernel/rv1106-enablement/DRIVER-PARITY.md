@@ -33,8 +33,8 @@ c8a3, not just compiled.
 | RGB666 720×720 panel | — | panel-dpi | 🔨 probes; bus_format + connector WIP |
 | GT911 touch (goodix) | goodix, gt911 | mainline | ⬜ M4 (needs GPIO_SYSFS ✅ + node) |
 | GPIO_SYSFS / crypto / CFG80211 | — | mainline (config) | ✅ =y (batch2) |
-| AIC8800 wifi (bsp/fdrv) | aic8800_* | **out-of-tree** | ⬜ M5 |
-| AIC8800 BT (btlpm) | aic8800_btlpm | **out-of-tree** | ⬜ M5 |
+| AIC8800 wifi (bsp/fdrv) | aic8800_* | **out-of-tree** | ✅ M5 — wlan0 up, scanned the site AP at −43dBm (modules, `wifi/VERIFIED-on-c8a3.md`) |
+| AIC8800 BT (btlpm) | aic8800_btlpm | **out-of-tree** | 🔨 module built (6.18 vermagic); HCI bring-up not yet exercised |
 | NPU (rknpu, ff660000) | rknpu, ff660000.npu | **out-of-tree** | ⬜ M6 — plan: `npu/PORT-PLAN.md` |
 | RGA 2D (rga2) | rga2 | ported (vendor char-dev) | ✅ /dev/rga, hw 3.3.87975 |
 | I2S audio (i2s-tdm) | i2s | rv1126 fallback | 🔨 DAI built; needs acodec+card |
