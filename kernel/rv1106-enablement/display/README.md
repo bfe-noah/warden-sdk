@@ -39,13 +39,11 @@ rockchip-drm display-subsystem: bound ff990000.vop
 brightness settable). **The VOP driver port is validated** — the register data,
 version, feature, and resets are right.
 
-## Open (needs on-panel eyes + a little more debug)
+## ✅ RESOLVED — full UI renders on the panel (2026-08-25)
 
-`/sys/class/drm/card0-*` has **no connector yet** — `rockchip_rgb_init` isn't
-producing one (log: `Cannot find any crtc or sizes`), despite INTERNAL_RGB set and
-a clean vop→panel of_graph. Likely a panel-probe-order / `drm_of_find_panel_or_bridge`
-detail. This is the last mile of M4 and, unlike the driver bind, needs the panel
-physically observed (pixels can't be verified over serial/ssh). To pin it down: a
-debug print in `rockchip_rgb_init` (child_count / find-panel ret), and set the panel
-bus_format to `MEDIA_BUS_FMT_RGB666_1X18` (a small `panel_dpi_probe` addition, since
-mainline panel-dpi doesn't read bus-format from DT).
+The connector *and* the deeper black-screen chain that followed it are fixed; the
+86-Panel now draws the full WardenOS Dashboard on 6.18 (`_b`), verified by webcam.
+The two final root causes were VOP driver bugs — `rgb_dclk_pol` hardcoded inverted,
+and the wrong primary scanout window (rv1106 scans out via **WIN1**, not WIN2).
+See **`VERIFIED.md`** for the complete bring-up chain, the `_a`-vs-`_b` register
+diff that pinned it down, and every file changed.

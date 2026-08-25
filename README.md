@@ -29,11 +29,16 @@ without a panel in the loop**, and to move us onto a modern, maintained kernel.
 
 ## Goals (from future-features)
 
-1. **Modern kernel.** Move to the newest stable Linux we can run on our current
-   Buildroot LTS (2025.02.x). The realistic ceiling is **plan44's OpenWrt RV1106
-   fork — Linux 6.6**, which carries 152 RV1106 patches and a devicetree for our
-   exact board. Mainline is not viable (no DT/clk/display/RGA/NPU/flash-boot).
-   This is a bounded, evidence-backed forward-port, not a mainline chase.
+1. **Modern kernel.** A self-built **Linux 6.18.46**, forward-ported directly from
+   the vendor 5.10.160 tree (no plan44/OpenWrt code) on our current Buildroot LTS
+   (2025.02.x). This is **done and hardware-verified on `warden-c8a3`**: essentially
+   every RV1106 block the 86-Panel uses boots and works — clk, pinctrl, eMMC, GMAC,
+   TRNG, OTP, SARADC/TSADC, RTC, USB host, PWM/backlight, **VOP display**, **GT911
+   touch**, **AIC8800 wifi**, **RGA**, **I2S audio**, **HPMCU mailbox**, the **open
+   NPU driver**, and **PVTM**. Mainline was not viable (no DT/clk/display/RGA/NPU/
+   flash-boot upstream for RV1106); the direct 5.10→6.18 forward-port reuses the
+   already-in-mainline rv1126 register data where it matches and carries our deltas
+   as a reviewable patch series (`patches/`).
 2. **Ported, hardened drivers → 100% MC/DC on the code we own.** "100% MC/DC on
    100% of drivers" is infeasible as literally stated: ~97% of driver LOC is
    vendor blobs (the AIC8800 wifi driver alone is 88.5K lines). So the target is

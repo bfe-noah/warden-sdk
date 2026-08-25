@@ -3,6 +3,10 @@ target/
 **/target/
 Cargo.lock
 
+# build artifacts (firmware/kernel objects are rebuilt from source)
+*.o
+*.a
+
 # scratch / editor
 *.swp
 *~
