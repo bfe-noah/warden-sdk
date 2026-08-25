@@ -115,6 +115,7 @@ jobs:
       - name: build zImage + rv1106-warden.dtb
         env:
           WORK: ${{ github.workspace }}/kbuild-out
+          JOBS: 4   # belt-and-braces bound in addition to the runner's cgroup cap
         run: bash build/build-kernel.sh
       - uses: actions/upload-artifact@v4
         with:
