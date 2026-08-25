@@ -19,7 +19,7 @@ c8a3, not just compiled.
 | I2C (dw-apb, ff460000=i2c3) | ff460000.i2c | mainline | ✅ batch1 (i2c-3) |
 | watchdog (dw-wdt, ff5a0000) | ff5a0000.watchdog | mainline | ✅ batch1 (watchdog0) |
 | tsadc thermal (ff3c8000) | rockchip_thermal | ported (data+init+macros) | ✅ soc-thermal reads 39.8°C |
-| SARADC (ff3c0000) | ff3c0000.saradc | ported (2-ch v2 data) | 🔨 driver added; probe -22 (clk-rate) |
+| SARADC (ff3c0000) | ff3c0000.saradc | ported (2-ch v2 data) | ✅ iio:device0 reads 2ch (adc-keys); fixed -22 via vref-supply |
 | TRNG (rng@ff448000) | rockchip,trngv1 | mainline (rk3588 IP) | ✅ /dev/hwrng, real entropy (`rng-otp/`) |
 | OTP/nvmem (ff3d0000) | rockchip,rv1106-otp | ported (px30_otp_read) | ✅ rockchip-otp0, reads chip id |
 | GMAC (ffa80000) | rockchip,rv1106-gmac | ported (dwmac-rk rv1106_ops) | ✅ eth0 Link Up 100M/Full (`gmac/`) |
