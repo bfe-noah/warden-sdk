@@ -77,10 +77,15 @@ done
 # 4. configure
 log "configuring (warden_defconfig)"
 cp "$HERE/warden_defconfig" "$SRC/.config"
-export ARCH=arm CROSS_COMPILE=arm-rockchip830-linux-uclibcgnueabihf-
+# CROSS_COMPILE defaults to the Luckfox SDK uclibc prefix (set SDK_TC to its bin/),
+# but the kernel is freestanding, so a caller may override with a generic arm cross
+# toolchain instead — e.g. CROSS_COMPILE=arm-linux-gnueabihf- (in Debian's
+# gcc-arm-linux-gnueabihf), which the CI runner already has on PATH.
+export ARCH=arm
+export CROSS_COMPILE="${CROSS_COMPILE:-arm-rockchip830-linux-uclibcgnueabihf-}"
 if [ -n "${SDK_TC:-}" ]; then export PATH="$SDK_TC:$PATH"; fi
 command -v "${CROSS_COMPILE}gcc" >/dev/null \
-  || { echo "cross toolchain ${CROSS_COMPILE}gcc not on PATH (set SDK_TC)" >&2; exit 1; }
+  || { echo "cross toolchain ${CROSS_COMPILE}gcc not on PATH (set SDK_TC, or CROSS_COMPILE to one that is)" >&2; exit 1; }
 make -C "$SRC" ARCH=arm CROSS_COMPILE="$CROSS_COMPILE" olddefconfig >/dev/null
 
 # 5. build zImage + the board dtb
