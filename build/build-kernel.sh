@@ -66,13 +66,33 @@ rm -rf "$SRC"
 log "extracting pristine"
 tar -C "$WORK" -xf "$TB"
 
-# 3. apply the patch series in order
+# 3. apply the patch series in order (fail loudly — never echo a lie)
 log "applying patch series"
 for p in "$PATCHES"/*.patch; do
-  git -C "$SRC" apply --whitespace=nowarn "$p" 2>/dev/null \
-    || patch -d "$SRC" -p1 --no-backup-if-mismatch < "$p"
+  if git -C "$SRC" apply --whitespace=nowarn "$p" 2>/dev/null; then
+    :
+  elif patch -d "$SRC" -p1 --forward --no-backup-if-mismatch < "$p" >/dev/null 2>&1; then
+    :
+  else
+    echo "FATAL: failed to apply $(basename "$p")" >&2
+    exit 1
+  fi
   echo "  applied $(basename "$p")"
 done
+
+# Guard against a SILENT no-op: `git apply` run from inside another git repo's
+# subdirectory ignores out-of-subdir paths and exits 0 without applying anything
+# (issue #1). $WORK must therefore live OUTSIDE any git checkout. Assert that a known
+# product of the series actually landed on disk, so this can never masquerade as
+# success again.
+SENTINEL="$SRC/arch/arm/boot/dts/rockchip/rv1106-warden.dts"
+[ -f "$SENTINEL" ] || {
+  echo "FATAL: patch series did not apply (missing $SENTINEL)." >&2
+  echo "       Is \$WORK inside a git repo? git apply silently ignores out-of-subdir" >&2
+  echo "       paths there — point WORK at a dir outside any checkout (e.g. \$RUNNER_TEMP)." >&2
+  exit 1
+}
+log "patch series applied ($(basename "$SENTINEL") present)"
 
 # 4. configure
 log "configuring (warden_defconfig)"

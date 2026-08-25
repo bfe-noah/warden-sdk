@@ -125,7 +125,10 @@ jobs:
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
       - name: build zImage + rv1106-warden.dtb
         env:
-          WORK: ${{ github.workspace }}/kbuild-out
+          # WORK must be OUTSIDE the repo checkout: build-kernel.sh applies the patch
+          # series with `git apply`, which silently ignores out-of-subdir paths when
+          # run inside another git repo (issue #1). $RUNNER_TEMP is outside the checkout.
+          WORK: ${{ runner.temp }}/kbuild-out
           JOBS: 4   # belt-and-braces bound in addition to the runner's cgroup cap
           # The kernel is freestanding; use the stable generic arm cross toolchain
           # (Debian gcc-arm-linux-gnueabihf on the runner) rather than depending on
@@ -136,8 +139,8 @@ jobs:
         with:
           name: kernel-rv1106
           path: |
-            ${{ github.workspace }}/kbuild-out/linux-6.18.46/arch/arm/boot/zImage
-            ${{ github.workspace }}/kbuild-out/linux-6.18.46/arch/arm/boot/dts/rockchip/rv1106-warden.dtb
+            ${{ runner.temp }}/kbuild-out/linux-6.18.46/arch/arm/boot/zImage
+            ${{ runner.temp }}/kbuild-out/linux-6.18.46/arch/arm/boot/dts/rockchip/rv1106-warden.dtb
           retention-days: 14
 
   badges:
