@@ -9,23 +9,26 @@ CRU clk · pinctrl (+ioc/pmuioc) · GIC · arch timer · pl330 DMA · 8250 uart 
 dw_mmc eMMC · i2c · dw-wdt · **RTC** · **tsadc** · **RGA** (rga2, hw 3.3.87975) ·
 PWM backlight · **USB host** (dwc3/xhci) + usb2phy · grf/pmu syscons.
 
+## ✅ Verified this run (2026-08-25) — all on warden-c8a3, self-built 6.18.46
+- **AIC8800 wifi** — wlan0 up, scanned BlueFlare −43 dBm (modules; `wifi/VERIFIED-on-c8a3.md`).
+- **TRNG** — /dev/hwrng, real HW entropy (`rng-otp/`).
+- **OTP/nvmem** — rockchip-otp0 reads chip id (`rng-otp/`).
+- **GMAC** — eth0 Link Up 100 Mbps/Full (`gmac/`).
+- **SARADC** — iio:device0 reads 2 ch; the −22 was vref, not clk (`adc/SARADC-FIX.md`).
+
 ## 🔨 In flight
-- **AIC8800 wifi/BT** (SDIO on &sdmmc) — the M5 port (subagent building it).
 - **VOP display** — binds; connector is tomorrow's on-panel work.
 - **i2s-tdm** — DAI builds; needs the codec + card (below).
-- **saradc** — driver matches; probe −22 (a clk-rv1106 SARADC divider issue).
+- **AIC8800 BT** — module built (6.18 vermagic); HCI bring-up not yet exercised.
 
-## ⬜ Remaining capabilities to port (open vendor source exists for all)
-| Block | vendor compat | 6.18 mainline? | value | plan |
-|---|---|---|---|---|
-| **GMAC** (wired ethernet) | dwmac, `&gmac` okay on-board | no rv1106 in dwmac-rockchip | HIGH (wired net) | add rv1106 glue to dwmac-rockchip + PHY/DT |
-| **crypto-v3** (accelerator) | rockchip,crypto-v3 | mainline has only v1 (rk3288) | med | port vendor crypto-v3 driver |
-| **trngv1** (hardware RNG) | rockchip,trngv1 | none | HIGH (entropy for keys) | port vendor trng → hwrng |
-| **OTP/nvmem** | rockchip,rv1106-otp | no rv1106 in rockchip-otp | med (chip id / MAC) | add rv1106 to rockchip-otp |
-| **mailbox** (HPMCU) | rockchip,rv1106-mailbox | only rk3368 | med (proper coproc mbox vs /dev/mem) | port |
-| **NPU** (rknpu) | rockchip,rknpu | none (no open userspace) | low-med | port kernel driver (`npu/PORT-PLAN.md`) |
-| **audio codec + DSM** | rv1106-codec, codec-digital | none | med (panel has speaker) | port rv1106_codec.c + rk_dsm.c + card |
-| **pvtm** (PVT monitors) | rv1106-{core,pmu}-pvtm | limited | low (DVFS) | port if DVFS pursued |
+## ⬜ Remaining — honest value/effort assessment
+| Block | value | effort | note |
+|---|---|---|---|
+| **audio codec + DSM** | MED (panel speaker) | med-high | next real capability — port rv1106_codec.c (2317L) + rk_dsm.c + simple-audio-card; ASoC 5.10→6.18 deltas. Card-registers verifiable now; audible test joins tomorrow's bench session |
+| **mailbox** (HPMCU) | MED | small | proper coproc mbox; the /dev/mem R5 path already works, so this is a cleanup not a gap |
+| **crypto-v3** (accel) | LOW-incremental | HIGH | ~100KB whole-subsystem replacement of mainline's rk3288 crypto + heavy crypto-API deltas. **CPU crypto extensions (AES/SHA, batch2 =y) already cover the functional need** — this is an offload optimization, not a capability gap. Defer to a dedicated session |
+| **NPU** (rknpu) | LOW (open) | med | kernel driver ports, but NO open userspace regcmd runtime exists — the driver would register with nothing able to submit jobs openly. Not worth shipping without an open encoder (`npu/PORT-PLAN.md`) |
+| **pvtm** | LOW | small | DVFS monitors; only if DVFS is pursued |
 
 ## ❌ Not applicable (no hardware on the 86-Panel)
 cif · csi2-dphy · mipi-csi2 · rkisp (all camera/ISP) · SPI (no on-board SPI device).
