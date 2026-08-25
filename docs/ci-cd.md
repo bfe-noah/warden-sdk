@@ -18,10 +18,14 @@
 
 A **third** repo-scoped runner instance on `bfe-mpc-0640` (alongside `flare` and
 `flare-edge`), registered with the label **`warden-sdk`** as
-`bfe-mpc-0640-warden-sdk`, in `~/actions-runner-warden-sdk`. The registration is
-done. **Steps 1–2 below need `user`'s sudo on 0640** (systemd service + cgroup —
-not automatable from the dev box); **steps 3–4 are handled inside the workflow**, so
-the runner host needs no manual toolchain/python setup.
+`bfe-mpc-0640-warden-sdk`, in `~/actions-runner-warden-sdk`.
+
+> **INSTALLED + ONLINE (2026-08-25).** The runner is a running systemd service
+> (`actions.runner.bfe-noah-warden-sdk.bfe-mpc-0640-warden-sdk.service`, `enabled`,
+> cgroup-capped `CPUQuota=400%`/`MemoryMax=6G`) and `kernel-build` has been verified
+> end-to-end (RV1106 6.18.46 → `zImage` 8.25 MB + `rv1106-warden.dtb`). Steps 1–2
+> below are the record of that install (they needed `user`'s sudo on 0640); steps
+> 3–4 are handled inside the workflow, so the host needs no manual toolchain/python.
 
 1. **Install as a service** (persistence): `cd ~/actions-runner-warden-sdk &&
    sudo ./svc.sh install user && sudo ./svc.sh start`. Until then the runner is
