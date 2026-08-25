@@ -1,0 +1,21 @@
+# ADR 0004 — CI/CD runner: 3rd repo-scoped self-hosted runner on 0640
+
+**Status:** Accepted (2026-08-25).
+
+## Context
+The heavy kernel/firmware build needs the SDK toolchain and Buildroot's baked-in
+absolute paths — impractical on GitHub-hosted runners. flare-edge already builds on
+a repo-scoped self-hosted runner on `bfe-mpc-0640` (label `flare-edge`); a repo-scoped
+registration cannot be shared across repos by label alone.
+
+## Decision
+Register a **third repo-scoped runner instance** on `bfe-mpc-0640`, label
+`warden-sdk` (own systemd unit `actions.runner.bfe-noah-warden-sdk.*`, own
+`CPUQuota=400%`/`MemoryMax=6G` drop-in). Only the heavy `kernel-build` job uses
+`runs-on: [self-hosted, warden-sdk]`; all host-testable jobs (tests, coverage, MC/DC,
+benchmarks, badges, patches-apply) run on GitHub-hosted runners.
+
+## Consequences
+- Isolated from the flare backend + flare-edge CI already on that host (cgroup-capped).
+- Runner setup + host build deps + the project-local `python` venv documented in
+  `docs/ci-cd.md`, mirroring flare-edge's.

@@ -16,8 +16,20 @@ PWM backlight · **USB host** (dwc3/xhci) + usb2phy · grf/pmu syscons.
 - **GMAC** — eth0 Link Up 100 Mbps/Full (`gmac/`).
 - **SARADC** — iio:device0 reads 2 ch; the −22 was vref, not clk (`adc/SARADC-FIX.md`).
 
+## ✅ VOP display — VERIFIED this run (2026-08-25)
+Full WardenOS Dashboard renders on the 86-Panel on 6.18 (`_b`), webcam-verified,
+pixel-identical to stock `_a`. Two VOP driver bugs were the final black-screen
+cause: `rgb_dclk_pol` hardcoded inverted (panel needs 0), and the wrong primary
+scanout window (rv1106 uses **WIN1**, not rv1126's WIN2). Full chain + `_a`-vs-`_b`
+register diff in `display/VERIFIED.md`.
+
+## ✅ GT911 touch — VERIFIED this run (2026-08-25)
+UI responds to taps/swipes on the panel (Noah-confirmed); GT911 detected
+(`ID 911, version 1060`), `/dev/input/event0` held by warden-ui. Fix:
+`CONFIG_TOUCHSCREEN_GOODIX=y` (built-in — the rootfs `goodix.ko` is a 5.10 build
+that can't load on 6.18) + GT911 node on `&i2c3`. Details in `touch/VERIFIED.md`.
+
 ## 🔨 In flight
-- **VOP display** — binds; connector is tomorrow's on-panel work.
 - **i2s-tdm** — DAI builds; needs the codec + card (below).
 - **AIC8800 BT** — module built (6.18 vermagic); HCI bring-up not yet exercised.
 
