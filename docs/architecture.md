@@ -61,10 +61,18 @@ supervisor logic runs in CI with no panel.
   bench unit (though the *layout* fault — a load address in unreserved kernel RAM —
   is a target-config check, §5, not a sim property).
 - **`cru` — reset ladder.** Done. `CruSim` on `MemBus` (so `flared::devmem::hard_reset`'s
-  ladder is host-tested against the known glb_srst_fst / DW-watchdog registers); an
-  **NPU** load model behind the path seam; a **GPIO/relay** sysfs model; a **modbus
-  device** model unifying the existing `mbsim.py` corpus into the same framework;
-  an **RGA** recording fake.
+  ladder is host-tested against the known glb_srst_fst / DW-watchdog registers), plus
+  the boot-mode register's survives-warm-reset / cleared-by-POR behaviour (the MaskRom
+  recovery maneuver). flared's `devmem` now has a matching `Bus` seam and unit tests
+  that assert the shipped ladder pokes the confirmed offset, never the wrong-SoC one.
+- **`modbus` — RS-485 device end.** Done. `ModbusSlave`: a byte-in/byte-out RTU slave
+  (CRC16 byte-identical to the master, FC 0x01–0x06/0x0F/0x10/0x11, exception replies,
+  and fault injection — silent-drop and forced-NAK) so `warden-modbus`'s master can be
+  hardened to MC/DC against realistic device behaviour with no serial hardware. MEI
+  (0x2B/0x0E) identification is the documented follow-up.
+- **Next:** an **NPU** load model behind the path seam (deferred — no NPU feature
+  ships soon); a **GPIO/relay** sysfs model (largely covered by the `WARDEN_GPIO_ROOT`
+  seam in flare-edge's `tests/relays-mcdc/`); an **RGA** recording fake.
 
 Integration with flare-edge: flared implements `MemBus` for `/dev/mem` and gains
 `#[cfg(test)]` tests driving its real arm/beat logic against `HpmcuSim`. This needs
