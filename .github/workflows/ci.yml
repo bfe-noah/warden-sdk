@@ -1,0 +1,82 @@
+# warden-sdk CI.
+#
+# Policy (mirrors flare-edge): only GitHub-owned actions get the repo token; the one
+# third-party helper (taiki-e/install-action) is pinned and never handed a token.
+# Host-testable jobs run on GitHub-hosted runners; only the heavy kernel build uses
+# the self-hosted [self-hosted, warden-sdk] runner on bfe-mpc-0640 (added in P5).
+name: ci
+
+on:
+  push:
+    paths-ignore: ['.github/badges/**']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    outputs:
+      passed: ${{ steps.result.outputs.passed }}
+      coverage: ${{ steps.result.outputs.coverage }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: cargo test (all crates)
+        run: |
+          set -o pipefail
+          : > /tmp/test.log
+          for d in sim tools/config-lint; do
+            echo "== cargo test in $d ==" | tee -a /tmp/test.log
+            ( cd "$d" && cargo test --locked ) 2>&1 | tee -a /tmp/test.log
+          done
+      - name: coverage (cargo-llvm-cov on sim)
+        run: rustup component add llvm-tools-preview
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
+      - name: run coverage
+        working-directory: sim
+        run: cargo llvm-cov --locked --json --summary-only --output-path /tmp/cov.json
+      - name: parse results
+        id: result
+        run: |
+          passed=$(grep -oE '[0-9]+ passed' /tmp/test.log | awk '{s+=$1} END{print s+0}')
+          pct=$(python3 -c 'import json;print("%.0f"%json.load(open("/tmp/cov.json"))["data"][0]["totals"]["lines"]["percent"])')
+          echo "passed=$passed" >> "$GITHUB_OUTPUT"
+          echo "coverage=$pct" >> "$GITHUB_OUTPUT"
+          echo "tests passed: $passed | sim line coverage: ${pct}%"
+
+  badges:
+    needs: [test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/bringup'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: install cloc
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq cloc
+      - name: render badges
+        env:
+          PASSED: ${{ needs.test.outputs.passed }}
+          COVERAGE: ${{ needs.test.outputs.coverage }}
+        run: |
+          mkdir -p .github/badges
+          loc=$(cloc --quiet --json --exclude-dir=target,build,build-target,patches,data,docs . \
+                | python3 -c 'import sys,json; print(json.load(sys.stdin)["SUM"]["code"])')
+          col=orange; [ "${COVERAGE:-0}" -ge 60 ] && col=yellow; [ "${COVERAGE:-0}" -ge 80 ] && col=brightgreen
+          curl -fsSL "https://img.shields.io/badge/lines%20of%20code-${loc}-blue" -o .github/badges/loc.svg
+          curl -fsSL "https://img.shields.io/badge/tests-${PASSED}%20passing-brightgreen" -o .github/badges/tests.svg
+          curl -fsSL "https://img.shields.io/badge/coverage-${COVERAGE}%25-${col}" -o .github/badges/coverage.svg
+      - name: commit badges
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/badges/loc.svg .github/badges/tests.svg .github/badges/coverage.svg
+          if ! git diff --cached --quiet; then
+            git commit -m "ci: update loc/tests/coverage badges [skip ci]"
+            git push
+          fi

@@ -1,5 +1,10 @@
 # warden-sdk
 
+[![ci](https://github.com/bfe-noah/warden-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/bfe-noah/warden-sdk/actions/workflows/ci.yml)
+![Lines of code](.github/badges/loc.svg)
+![Tests](.github/badges/tests.svg)
+![Coverage](.github/badges/coverage.svg)
+
 The build, driver, and simulation SDK for WardenOS (the Luckfox Pico 86-Panel /
 RV1106 HMI). A from-scratch replacement for the twice-ported vendor stack
 (Rockchip SDK → Luckfox SDK → our patched fork), built to the same standard as
