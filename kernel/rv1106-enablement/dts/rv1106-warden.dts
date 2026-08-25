@@ -146,3 +146,16 @@
 	status = "okay";
 	dr_mode = "otg";
 };
+
+/* --- sweep: RTC + thermal (tsadc) + I2S audio DAI --- */
+&rtc {
+	status = "okay";
+};
+
+&tsadc {
+	status = "okay";
+};
+
+&i2s0_8ch {
+	status = "okay";
+};
