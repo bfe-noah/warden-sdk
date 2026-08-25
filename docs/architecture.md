@@ -63,8 +63,10 @@ supervisor logic runs in CI with no panel.
 - **`cru` — reset ladder.** Done. `CruSim` on `MemBus` (so `flared::devmem::hard_reset`'s
   ladder is host-tested against the known glb_srst_fst / DW-watchdog registers), plus
   the boot-mode register's survives-warm-reset / cleared-by-POR behaviour (the MaskRom
-  recovery maneuver). flared's `devmem` now has a matching `Bus` seam and unit tests
-  that assert the shipped ladder pokes the confirmed offset, never the wrong-SoC one.
+  recovery maneuver). The matching firmware-side `Bus` seam on flared's `devmem` — so
+  the shipped ladder can be asserted to poke the confirmed offset, never the wrong-SoC
+  one — lands when flare-edge consumes warden-sdk (§7 item 3, [maintainer]-gated), not yet on
+  flare-edge `main`.
 - **`modbus` — RS-485 device end.** Done. `ModbusSlave`: a byte-in/byte-out RTU slave
   (CRC16 byte-identical to the master, FC 0x01–0x06/0x0F/0x10/0x11, exception replies,
   and fault injection — silent-drop and forced-NAK) so `warden-modbus`'s master can be
