@@ -28,9 +28,11 @@ c8a3, not just compiled.
 | USB host (xhci, usb1) | xhci-hcd:usb1 | mainline | ⬜ M6 |
 | crypto (aes/ccm/ctr/arc4) | modules | mainline | ⬜ batch2 (config =y) |
 | PSCI node (removed) | — | — | ✅ deleted (no secure monitor → SMC fault) |
-| VOP display (ff990000) | ff990000.vop | rockchip DRM | ⬜ M4 |
-| RGB666 720×720 panel + backlight | — | panel-simple/rockchip | ⬜ M4 |
-| GT911 touch (goodix) | goodix, gt911 | mainline | ⬜ M4 |
+| VOP display (ff990000) | ff990000.vop | ported (rv1126 sibling) | 🔨 binds+DRM+card0; connector WIP |
+| PWM backlight (pwm1) | — | mainline (rk3328 fallback) | ✅ backlight up (brightness) |
+| RGB666 720×720 panel | — | panel-dpi | 🔨 probes; bus_format + connector WIP |
+| GT911 touch (goodix) | goodix, gt911 | mainline | ⬜ M4 (needs GPIO_SYSFS ✅ + node) |
+| GPIO_SYSFS / crypto / CFG80211 | — | mainline (config) | ✅ =y (batch2) |
 | AIC8800 wifi (bsp/fdrv) | aic8800_* | **out-of-tree** | ⬜ M5 |
 | AIC8800 BT (btlpm) | aic8800_btlpm | **out-of-tree** | ⬜ M5 |
 | NPU (rknpu, ff660000) | rknpu, ff660000.npu | **out-of-tree** | ⬜ M6 |
