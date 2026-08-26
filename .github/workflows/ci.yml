@@ -110,11 +110,43 @@ jobs:
           done
           echo "full series applied cleanly onto pristine 6.18.46"
 
+  # Automatic artifact GC (mirrors flare-edge). An exceeded account-wide Actions
+  # storage quota blocks ALL new runs (startup_failure), not just uploads, so
+  # before a new kernel artifact is uploaded, drop older kernel-rv1106 artifacts
+  # beyond the newest few — storage stays bounded across dispatches. gh + the
+  # built-in token (no third-party action); needs actions:write to delete.
+  # Best-effort: it never fails the run, so it can't block the build that needs it.
+  prune-artifacts:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Keep only the newest few kernel artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          KEEP: "3"
+        run: |
+          ids=$(gh api --paginate "repos/$REPO/actions/artifacts?per_page=100" \
+                  --jq "[.artifacts[] | select(.name==\"kernel-rv1106\")]
+                        | sort_by(.created_at) | reverse | .[$KEEP:] | .[].id" \
+                2>/dev/null) || { echo "list failed; skipping"; exit 0; }
+          n=0
+          for id in $ids; do
+            if gh api -X DELETE "repos/$REPO/actions/artifacts/$id" 2>/dev/null; then
+              n=$((n + 1)); echo "pruned artifact $id"
+            fi
+          done
+          echo "pruned $n old kernel artifact(s); kept newest $KEEP"
+          exit 0
+
   kernel-build:
     # Full hermetic build on the warden-sdk self-hosted runner (bfe-mpc-0640,
     # ADR-0004). Manual-dispatch by design — a full kernel build is too heavy to run
     # on every push; trigger it via `gh workflow run ci.yml` / the Actions UI.
     if: github.event_name == 'workflow_dispatch'
+    needs: [prune-artifacts]
     runs-on: [self-hosted, warden-sdk]
     steps:
       - uses: actions/checkout@v4
@@ -146,7 +178,10 @@ jobs:
           path: |
             ${{ runner.temp }}/kbuild-out/linux-6.18.46/arch/arm/boot/zImage
             ${{ runner.temp }}/kbuild-out/linux-6.18.46/arch/arm/boot/dts/rockchip/rv1106-warden.dtb
-          retention-days: 14
+          # Short so kernel images self-expire instead of piling into the
+          # account-wide storage quota; the prune-artifacts job above is the
+          # active bound, this is the backstop.
+          retention-days: 5
 
   badges:
     needs: [test]
