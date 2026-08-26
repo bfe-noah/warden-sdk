@@ -1,5 +1,15 @@
 # RV1106 → 6.18 forward-port — live status
 
+> **CANONICAL SOURCE.** This directory is a point-in-time **port-provenance layer** —
+> what was ported, the milestones, verification evidence, and standalone test programs
+> (e.g. `npu/rknpu_version_test.c`). It is **not** the source of truth for the kernel
+> delta. The canonical, current delta is **`../../patches/*.patch`** (applied by
+> `../../build/build-kernel.sh`); the full hardware-verified tree is
+> `flare-edge/research/linux-6.18.46/`. The `.c`/`.dts`/`.frag` snapshots here are
+> historical port evidence and may **lag** the final series (e.g. `clk/clk-rv1106.c`
+> predates the last HPMCU-clock `CLK_IGNORE_UNUSED` fix that is in `patches/10-clk-rv1106.patch`).
+> Do not hand-edit them or treat them as current — change kernel behaviour in `patches/`.
+
 Target: **Linux 6.18.46** (vanilla, `flare-edge/research/linux-6.18.46/`), forward-ported
 from the **vendor 5.10.160** tree, no plan44 code, built with our
 `arm-rockchip830-...-gcc 8.3` (confirmed: **gcc 8.3 builds 6.18 fine**).
