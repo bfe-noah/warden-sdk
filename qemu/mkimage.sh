@@ -96,10 +96,15 @@ place_partition() {
     rootfs_a|rootfs_b) stage="$ROOT" ;;
     userdata)          stage="$UDATA" ;;
     oem_a|oem_b)       stage="$SCRATCH/empty" ;;
+    # misc carries REAL AvbABData (byte 2048): flared's slotctl fail-closes
+    # on a bad magic before any OTA write, so a zeroed misc blocks apply
+    # scenarios. Bytes mirror flare-edge tools/mk-misc.py provisioning
+    # defaults (A: prio 15 successful, B: prio 14 successful, CRC32-BE).
+    misc) stage="__misc__" ;;
     # Boot-chain partitions the VM never reads: present at the right offsets,
     # left zeroed. Enumerated (not a wildcard) so a typo'd name in
     # blkdevparts.conf fails HERE, not as a confusing mount error at boot.
-    env|idblock|uboot|misc|boot_a|boot_b|recovery) stage="" ;;
+    env|idblock|uboot|boot_a|boot_b|recovery) stage="" ;;
     *) echo "FATAL: unknown partition name '$name' in blkdevparts.conf" >&2; exit 1 ;;
   esac
   # dd in 4K blocks — every offset in the canonical layout is 4K-aligned;
@@ -112,6 +117,25 @@ place_partition() {
   [ $((off + size)) -gt "$DISK_END" ] && DISK_END=$((off + size))
   [ -z "$stage" ] && return 0
   local img="$SCRATCH/$name.img"
+  if [ "$stage" = "__misc__" ]; then
+    python3 - "$img" "$size" <<'PYMISC'
+import struct, sys, zlib
+img, size = sys.argv[1], int(sys.argv[2])
+s = bytearray(28)
+s[0:4] = b"\0AB0"          # AB_MAGIC
+s[4] = 1                     # major
+s[8:12] = bytes([15, 0, 1, 0])   # slot A: priority, tries, successful
+s[12:16] = bytes([14, 0, 1, 0])  # slot B
+meta = bytes(s) + struct.pack(">I", zlib.crc32(bytes(s)) & 0xFFFFFFFF)
+buf = bytearray(size)
+buf[2048:2048 + len(meta)] = meta
+open(img, "wb").write(buf)
+PYMISC
+    dd if="$img" of="$DISK" bs=4096 seek=$((off / 4096)) \
+       conv=notrunc,sparse status=none
+    qemu_log "  $name: AvbABData provisioned @ +2048"
+    return 0
+  fi
   mkfs_part "$stage" "$size" "$img"
   dd if="$img" of="$DISK" bs=4096 seek=$((off / 4096)) \
      conv=notrunc,sparse status=none

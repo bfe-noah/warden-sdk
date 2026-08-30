@@ -22,6 +22,8 @@
 #   --http-port N      hostfwd 127.0.0.1:N -> guest :80   (default 8080; 0 disables)
 #   --api-port N       hostfwd 127.0.0.1:N -> guest :28443 (default 28443; 0 disables)
 #   --shell            interactive shell in the guest instead of daemon hold
+#   --allow-apply      let flared ACTUALLY apply OTA firmware (writes rootfs_b
+#                      inside disk.img — safe in the VM, never the default)
 set -euo pipefail
 
 QEMU_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -30,7 +32,7 @@ QEMU_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OUT="${OUT:-$QEMU_DIR/out}"
 
 KERNEL="" INITRD="$OUT/initramfs.cpio.gz" DISK="" NO_DISK=0 SLOT="_a"
-RTC="" RS485="" WATCHDOG=0 QMP="" DISPLAY_MODE="off" SHELL_FLAG=0
+RTC="" RS485="" WATCHDOG=0 QMP="" DISPLAY_MODE="off" SHELL_FLAG=0 ALLOW_APPLY=0
 SSH_PORT=2222 HTTP_PORT=8080 API_PORT=28443
 EXTRA=()
 
@@ -50,6 +52,7 @@ while [ $# -gt 0 ]; do
     --http-port) HTTP_PORT="${2:?}"; shift 2 ;;
     --api-port)  API_PORT="${2:?}"; shift 2 ;;
     --shell)     SHELL_FLAG=1; shift ;;
+    --allow-apply) ALLOW_APPLY=1; shift ;;
     --) shift; EXTRA=("$@"); break ;;
     *) echo "FATAL: unknown argument '$1' (see header of $0)" >&2; exit 1 ;;
   esac
@@ -99,6 +102,7 @@ if [ -n "$DISK" ] && [ "$NO_DISK" -eq 0 ]; then
           -device "virtio-blk-device,drive=vd0" )
 fi
 [ "$SHELL_FLAG" -eq 1 ] && APPEND="$APPEND warden.shell"
+[ "$ALLOW_APPLY" -eq 1 ] && APPEND="$APPEND warden.fwapply"
 [ -n "$RTC" ] && ARGS+=( -rtc "base=$RTC" )
 [ "$WATCHDOG" -eq 1 ] && ARGS+=( -device i6300esb -action watchdog=reset )
 [ -n "$RS485" ] && ARGS+=( -chardev "socket,id=rs485,path=$RS485,server=on,wait=off"
