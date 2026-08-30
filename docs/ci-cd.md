@@ -47,11 +47,15 @@ Host build deps: `dtc bc flex bison libssl-dev` — already present on 0640.
 
 5. **`qemu-system-arm`** (for the boot-smoke step inside `kernel-build`, added
    with the `qemu/` device sim — ADR-0006): one-time
-   `sudo apt-get install qemu-system-arm cpio` on 0640. The step is
+   `sudo apt-get install qemu-system-arm` on 0640. The step is
    **fail-closed** — a missing qemu binary fails the job with a message
-   pointing here; it never silently skips. NOT YET PROVISIONED (2026-08-29):
-   the first dispatched `kernel-build` after this lands will fail its smoke
-   step until the install is done ([maintainer]-gated sudo on 0640).
+   pointing here; it never silently skips.
+
+   > **INSTALLED (2026-08-30).** QEMU 10.0.11 via apt as `user` on 0640
+   > (reached over the mesh at `[mesh-ip]`); `cpio` and `curl` were already
+   > present. Recorded in flare-deployment `docs/deploy-log.md`. First
+   > dispatched `kernel-build` will exercise the smoke step end-to-end once
+   > the account-wide Actions billing stall is cleared.
 
 ## Badges
 
