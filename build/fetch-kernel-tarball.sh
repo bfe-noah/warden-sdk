@@ -14,14 +14,16 @@ URL="https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-$KVER.tar.xz"
 
 TB="${1:?usage: fetch-kernel-tarball.sh <destination-path>}"
 
-if [ ! -f "$TB" ]; then
-  echo "== downloading $URL"
-  curl --retry 3 --retry-delay 5 -fSL "$URL" -o "$TB"
-fi
+# Pin first: a forgotten pin on a KVER bump should refuse BEFORE burning a
+# 140MB download it will then reject anyway.
 [ -f "$SHA_FILE" ] || {
   echo "FATAL: no pinned sha256 for linux-$KVER (expected $SHA_FILE) — refusing an unverified tarball" >&2
   exit 1
 }
+if [ ! -f "$TB" ]; then
+  echo "== downloading $URL"
+  curl --retry 3 --retry-delay 5 --retry-connrefused -fSL "$URL" -o "$TB"
+fi
 want="$(cat "$SHA_FILE")"
 got="$(sha256sum "$TB" | awk '{print $1}')"
 [ "$want" = "$got" ] || { echo "FATAL: tarball sha256 mismatch: want $want got $got" >&2; exit 1; }

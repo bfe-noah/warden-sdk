@@ -21,6 +21,7 @@ echo "WARDEN-QEMU-BOOT-OK"
 # slot select, switch_root). It only returns on failure — then fall through to
 # the diskless shell/poweroff behavior below.
 if [ -b /dev/vda ]; then
+    # shellcheck source=qemu/rootfs/etc/rc disable=SC1091
     . /etc/rc
 fi
 

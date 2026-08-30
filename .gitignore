@@ -6,6 +6,8 @@ target/
 # build artifacts (firmware/kernel objects are rebuilt from source)
 *.o
 *.a
+*.elf
+*.map
 
 # scratch / editor
 *.swp

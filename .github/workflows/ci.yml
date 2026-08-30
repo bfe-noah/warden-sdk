@@ -108,7 +108,9 @@ jobs:
       - name: shellcheck qemu scripts
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
-          shellcheck -x qemu/*.sh qemu/tests/*.sh
+          shellcheck -x qemu/*.sh qemu/tests/*.sh build/*.sh \
+            qemu/rootfs/etc/warden-lib.sh qemu/rootfs/etc/rc \
+            qemu/rootfs/sbin/init qemu/rootfs/init
       - name: cache pinned busybox
         uses: actions/cache@v4
         with:

@@ -10,6 +10,8 @@
 # Env:
 #   KERNEL_TARBALL   path to a local linux-6.18.46.tar.xz (skips the download)
 #   SDK_TC           dir holding the arm-rockchip830 uclibc cross toolchain bin/
+#   CROSS_COMPILE    cross-compiler prefix (default arm-rockchip830-linux-uclibcgnueabihf-;
+#                    CI overrides with the generic arm-linux-gnueabihf-)
 #   WORK             build scratch dir (default: a mktemp under $TMPDIR)
 #   JOBS             parallel make jobs (default: nproc)
 #   WARDEN_KCONFIG_FRAGMENT
@@ -119,7 +121,7 @@ make -C "$SRC" ARCH=arm CROSS_COMPILE="$CROSS_COMPILE" olddefconfig >/dev/null
 # request in the fragment survived into the final .config; fail loud if not.
 if [ -n "${WARDEN_KCONFIG_FRAGMENT:-}" ]; then
   frag_fail=0
-  while IFS= read -r line; do
+  while IFS= read -r line || [ -n "$line" ]; do
     case "$line" in
       CONFIG_*=*)
         grep -qxF "$line" "$SRC/.config" || {
@@ -127,9 +129,11 @@ if [ -n "${WARDEN_KCONFIG_FRAGMENT:-}" ]; then
           frag_fail=1
         } ;;
       "# CONFIG_"*" is not set")
-        opt="${line#\# }"; opt="${opt% is not set}"
-        grep -qE "^$opt=" "$SRC/.config" && {
-          echo "FATAL: fragment disabled '$opt' but it is set in the final .config" >&2
+        # Symmetric with the enable arm: the exact disable line must be
+        # present. A symbol absent entirely means a typo'd/renamed option,
+        # not a successful disable.
+        grep -qxF "$line" "$SRC/.config" || {
+          echo "FATAL: fragment line '$line' not reflected in the final .config" >&2
           frag_fail=1
         } ;;
     esac

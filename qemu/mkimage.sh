@@ -36,6 +36,9 @@ while [ $# -gt 0 ]; do
         *) echo "FATAL: --state needs KEY=VALUE, got '$2'" >&2; exit 1 ;;
       esac
       case "${2%%=*}" in
+        .|..)
+          echo "FATAL: --state key cannot be '.' or '..'" >&2
+          exit 1 ;;
         *[!A-Za-z0-9_.]*|'')
           echo "FATAL: --state key '${2%%=*}' must match [A-Za-z0-9_.]+ (it becomes a filename)" >&2
           exit 1 ;;

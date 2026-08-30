@@ -38,7 +38,7 @@ c8a3, not just compiled.
 | GPIO_SYSFS / crypto / CFG80211 | — | mainline (config) | [x] =y (batch2) |
 | AIC8800 wifi (bsp/fdrv) | aic8800_* | **out-of-tree** | [x] M5 — wlan0 up, scanned the site AP at −43dBm (modules, `wifi/VERIFIED-on-c8a3.md`) |
 | AIC8800 BT (btlpm) | aic8800_btlpm | **out-of-tree** | [wip] module built (6.18 vermagic); HCI bring-up not yet exercised |
-| NPU (rknpu, ff660000) | rknpu, ff660000.npu | **out-of-tree** | [wip] M6 built, 0 errors/0 warnings, 99 `rknpu`-prefixed symbols in `System.map`, `&npu {status="okay"}` in the dtb — **not yet flashed/probed on hardware** (build-only session; see `npu/PORT-PROGRESS.md`) |
+| NPU (rknpu, ff660000) | rknpu, ff660000.npu | **out-of-tree** | [x] open GPL driver VERIFIED on hardware — `/dev/dri/card1`, `rknpu_version_test` PASS (power/clock/reset path exercised); open *compute* (regcmd) remains a from-scratch RE project (`npu/VERIFIED.md`, `npu/OPEN-NPU-PLAN.md`) |
 | RGA 2D (rga2) | rga2 | ported (vendor char-dev) | [x] /dev/rga, hw 3.3.87975 |
 | I2S audio (i2s-tdm) | i2s | rv1126 fallback (=y) | [x] cpu DAI registers (part of the card below) |
 | Audio codec (acodec) | rockchip,rv1106-codec | ported (rv1106_codec.c) | [x] card `rv1106-acodec`, pcmC0D0p/c (`audio/`); audible test @ bench |

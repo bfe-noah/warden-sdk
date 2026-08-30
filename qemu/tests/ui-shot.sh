@@ -94,16 +94,29 @@ sys.exit(0 if distinct > 16 else 1)
 EOF
 }
 
+# The VM can die mid-poll (OOM, crash): check liveness before every QMP
+# call so the failure is OUR message + console evidence, not a python
+# traceback — and preserve the console log before the trap removes $WORK.
+vm_alive_or_die() {
+  kill -0 "$QEMU_PID" 2>/dev/null && return 0
+  echo "FATAL: VM exited during the screendump poll" >&2
+  tail -25 "$WORK/console.log" >&2
+  mkdir -p "$OUTDIR"; cp "$WORK/console.log" "$OUTDIR/ui-shot-console.log" || true
+  exit 1
+}
+
 # Poll for the first rendered frame (bounded, no guessed sleep).
 rendered=0
 deadline=$((SECONDS + 90))
 while [ $SECONDS -lt $deadline ]; do
+  vm_alive_or_die
   qmp screendump "$WORK/shot1.ppm"
   if frame_rendered "$WORK/shot1.ppm"; then rendered=1; break; fi
   sleep 3
 done
 [ "$rendered" = 1 ] || {
   echo "FATAL: UI never rendered a non-blank frame within 90s" >&2
+  mkdir -p "$OUTDIR"; cp "$WORK/console.log" "$OUTDIR/ui-shot-console.log" || true
   exit 1
 }
 
@@ -112,9 +125,13 @@ done
 # repaint rather than guessing a delay.
 qmp tap 16975 1820
 changed=0
-deadline=$((SECONDS + 30))
+# 90s, matching the first-frame budget: TCG repaints are CPU-bound and a
+# contended CI runner can be arbitrarily slower than this dev box (same
+# margin reasoning as the rs485 test-gap widening).
+deadline=$((SECONDS + 90))
 while [ $SECONDS -lt $deadline ]; do
   sleep 2
+  vm_alive_or_die
   qmp screendump "$WORK/shot2.ppm"
   if ! cmp -s "$WORK/shot1.ppm" "$WORK/shot2.ppm"; then changed=1; break; fi
 done
@@ -124,7 +141,8 @@ cp "$WORK/shot1.ppm" "$OUTDIR/ui-shot1.ppm"
 cp "$WORK/shot2.ppm" "$OUTDIR/ui-shot2.ppm" 2>/dev/null || true
 
 [ "$changed" = 1 ] || {
-  echo "FATAL: tapping the Metrics tab did not change the frame within 30s — touch is not reaching the UI" >&2
+  echo "FATAL: tapping the Metrics tab did not change the frame within 90s — touch is not reaching the UI" >&2
+  cp "$WORK/console.log" "$OUTDIR/ui-shot-console.log" || true
   exit 1
 }
 echo "tap on the Metrics tab repainted the frame (touch reached the UI)"

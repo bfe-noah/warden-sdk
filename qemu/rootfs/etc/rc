@@ -10,6 +10,7 @@
 # exits and the kernel panics; the applet-existence check below catches the
 # only preventable variant of that.
 
+# shellcheck source=qemu/rootfs/etc/warden-lib.sh disable=SC1091
 . /etc/warden-lib.sh
 
 warden_populate_by_name

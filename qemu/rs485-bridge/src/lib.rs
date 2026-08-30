@@ -61,6 +61,7 @@ pub fn pump_serial(
     stream.set_read_timeout(Some(gap))?;
     let mut buf: Vec<u8> = Vec::new();
     let mut chunk = [0u8; 256];
+    let mut discards: u64 = 0;
     loop {
         match (&*stream).read(&mut chunk) {
             Ok(0) => {
@@ -72,12 +73,20 @@ pub fn pump_serial(
             Ok(n) => {
                 buf.extend_from_slice(&chunk[..n]);
                 if buf.len() > MAX_PENDING {
-                    eprintln!(
-                        "rs485: {} bytes buffered with no inter-frame gap — discarding \
-                         (misbehaving master streaming continuously?)",
-                        buf.len()
-                    );
+                    // Rate-limit the log and back off for one gap so a master
+                    // streaming continuously cannot peg a core and flood
+                    // stderr — mirroring the accept-loop backoff.
+                    discards += 1;
+                    if discards == 1 || discards.is_multiple_of(256) {
+                        eprintln!(
+                            "rs485: {} bytes buffered with no inter-frame gap — \
+                             discarding (misbehaving master? {} discards so far)",
+                            buf.len(),
+                            discards
+                        );
+                    }
                     buf.clear();
+                    std::thread::sleep(gap);
                 }
             }
             Err(e)

@@ -29,6 +29,7 @@ warden_populate_by_name() {
 # VALIDATE it — echoes "_a" or "_b", falling back to _a with a warning.
 warden_slot() {
     slot="_a"
+    # shellcheck disable=SC2013 # cmdline TOKENS are the unit here, not lines
     for tok in $(cat /proc/cmdline); do
         case "$tok" in
             warden.slot=*) slot="${tok#warden.slot=}" ;;

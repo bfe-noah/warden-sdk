@@ -19,6 +19,7 @@ Then:
 cp <flare-edge>/target/armv7-unknown-linux-musleabihf/release/warden-flared qemu/payload/
 ```
 
-Stage-2 init starts `warden-flared` and `warden-modbus` automatically when
-present (logs land in `/tmp/<name>.log` inside the guest). An empty payload is
-valid — the image boots to a busybox-only userspace.
+Stage-2 init starts `warden-flared`, `warden-modbus`, and `warden-ui` (the
+UI additionally needs `--display on|headless` + the virt.fragment kernel for
+/dev/fb0) automatically when present (logs land in `/tmp/<name>.log` inside
+the guest). An empty payload is valid — the image boots busybox-only.
