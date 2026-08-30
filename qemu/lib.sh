@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Shared helpers for the qemu/ device-sim build scripts. Sourced, not executed.
 # Callers must run under `set -euo pipefail` and define QEMU_DIR (the qemu/ dir).
 

@@ -9,14 +9,16 @@
 # Built entirely UNPRIVILEGED: per-partition mkfs.ext4 -d (no loop mounts, no
 # sudo), then dd'd into a sparse raw image.
 #
-# Usage: mkimage.sh [--portal-url URL] [--state KEY=VALUE]...
+# Usage: mkimage.sh [--portal-url URL] [--state KEY=VALUE]... [--fw-version V]
 # Env:
 #   BUSYBOX   path to a local busybox binary (skips the download; still verified)
 #   OUT       output dir (default: qemu/out); image at $OUT/disk.img
 set -euo pipefail
 
 QEMU_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=qemu/lib.sh disable=SC1091
 . "$QEMU_DIR/lib.sh"
+# shellcheck source=qemu/blkdevparts.conf disable=SC1091
 . "$QEMU_DIR/blkdevparts.conf"
 OUT="${OUT:-$QEMU_DIR/out}"
 # mkfs.ext4 lives in sbin, which user shells on Debian don't have on PATH.
@@ -24,11 +26,13 @@ PATH="$PATH:/usr/sbin:/sbin"
 
 PORTAL_URL=""
 STATE_KV=()
+FW_VERSION="0.0.1"
 while [ $# -gt 0 ]; do
   case "$1" in
     --portal-url) PORTAL_URL="${2:?--portal-url needs a value}"; shift 2 ;;
     --state)      STATE_KV+=("${2:?--state needs KEY=VALUE}"); shift 2 ;;
-    *) echo "FATAL: unknown argument '$1' (usage: mkimage.sh [--portal-url URL] [--state KEY=VALUE]...)" >&2; exit 1 ;;
+    --fw-version) FW_VERSION="${2:?--fw-version needs a value}"; shift 2 ;;
+    *) echo "FATAL: unknown argument '$1' (usage: mkimage.sh [--portal-url URL] [--state KEY=VALUE]... [--fw-version V])" >&2; exit 1 ;;
   esac
 done
 
@@ -47,12 +51,17 @@ for p in "$QEMU_DIR"/payload/*; do
   install -m 0755 "$p" "$ROOT/usr/bin/$(basename "$p")"
 done
 
+# Firmware version stamp — same path the device build writes; flared reads its
+# running version here (downgrade rules key off it).
+printf '%s\n' "$FW_VERSION" > "$ROOT/etc/warden-firmware-version"
+
 # Seed persistent state (flared: one file per key under /userdata/warden).
+# Newline-terminated, matching how flare-edge's fw-e2e-test.sh seeds the store.
 UDATA="$SCRATCH/userdata"
 mkdir -p "$UDATA/warden"
-[ -n "$PORTAL_URL" ] && printf '%s' "$PORTAL_URL" > "$UDATA/warden/flare.url"
+[ -n "$PORTAL_URL" ] && printf '%s\n' "$PORTAL_URL" > "$UDATA/warden/flare.url"
 for kv in ${STATE_KV[@]+"${STATE_KV[@]}"}; do
-  printf '%s' "${kv#*=}" > "$UDATA/warden/${kv%%=*}"
+  printf '%s\n' "${kv#*=}" > "$UDATA/warden/${kv%%=*}"
 done
 
 mkdir -p "$SCRATCH/empty"
@@ -78,10 +87,10 @@ place_partition() {
   esac
   # dd in 4K blocks — every offset in the canonical layout is 4K-aligned;
   # assert rather than assume, a misaligned write would corrupt a neighbor.
-  [ $((off % 4096)) -eq 0 ] && [ $((size % 4096)) -eq 0 ] || {
+  if [ $((off % 4096)) -ne 0 ] || [ $((size % 4096)) -ne 0 ]; then
     echo "FATAL: partition $name not 4K-aligned (off=$off size=$size)" >&2
     exit 1
-  }
+  fi
   DISK_END=$((off + size))
   [ -z "$stage" ] && return 0
   local img="$SCRATCH/$name.img"

@@ -1,0 +1,26 @@
+[package]
+name = "warden-rs485-bridge"
+version = "0.1.0"
+edition = "2021"
+description = "Bridges a QEMU serial chardev (unix socket) to the warden-sim Modbus RTU slave, so the VM guest's RS-485 master polls the same simulated field bus the unit tests do — fault injection included."
+license = "MIT OR Apache-2.0"
+
+[lib]
+name = "warden_rs485_bridge"
+path = "src/lib.rs"
+
+[[bin]]
+name = "rs485-bridge"
+path = "src/main.rs"
+
+# Std-only on purpose: the sim crate it wraps is zero-dep, and unix sockets +
+# read timeouts need nothing external.
+[dependencies]
+warden-sim = { path = "../../sim" }
+
+[dev-dependencies]
+
+# Dependency-free micro-benchmarks, same pattern as sim/benches/sim_bench.rs.
+[[bench]]
+name = "bridge_bench"
+harness = false

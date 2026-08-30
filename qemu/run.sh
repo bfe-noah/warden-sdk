@@ -25,6 +25,7 @@
 set -euo pipefail
 
 QEMU_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=qemu/blkdevparts.conf disable=SC1091
 . "$QEMU_DIR/blkdevparts.conf"
 OUT="${OUT:-$QEMU_DIR/out}"
 
@@ -54,10 +55,10 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-[ -n "$KERNEL" ] && [ -f "$KERNEL" ] || {
+if [ -z "$KERNEL" ] || [ ! -f "$KERNEL" ]; then
   echo "FATAL: --kernel <zImage> required and must exist (got '${KERNEL:-}')" >&2
   exit 1
-}
+fi
 [ -f "$INITRD" ] || {
   echo "FATAL: initramfs not found at $INITRD — run qemu/mkinitramfs.sh" >&2
   exit 1
@@ -76,30 +77,30 @@ fi
 # 0xff4c0000, which does not exist on -M virt.
 APPEND="console=ttyAMA0 rdinit=/init"
 ARGS=(
-  -M virt -cpu cortex-a7 -smp 1 -m 256M
+  -M "virt,highmem=off" -cpu cortex-a7 -smp 1 -m 256M
   -kernel "$KERNEL" -initrd "$INITRD"
   -netdev "user,id=n0,hostfwd=tcp:127.0.0.1:${SSH_PORT}-:22,hostfwd=tcp:127.0.0.1:${HTTP_PORT}-:80,hostfwd=tcp:127.0.0.1:${API_PORT}-:28443"
-  -device virtio-net-device,netdev=n0
+  -device "virtio-net-device,netdev=n0"
   -no-reboot
 )
 
 if [ -n "$DISK" ] && [ "$NO_DISK" -eq 0 ]; then
   APPEND="$APPEND blkdevparts=$WARDEN_BLKDEVPARTS warden.slot=$SLOT"
   ARGS+=( -drive "if=none,file=$DISK,format=raw,id=vd0"
-          -device virtio-blk-device,drive=vd0 )
+          -device "virtio-blk-device,drive=vd0" )
 fi
 [ "$SHELL_FLAG" -eq 1 ] && APPEND="$APPEND warden.shell"
 [ -n "$RTC" ] && ARGS+=( -rtc "base=$RTC" )
 [ "$WATCHDOG" -eq 1 ] && ARGS+=( -device i6300esb -action watchdog=reset )
 [ -n "$RS485" ] && ARGS+=( -chardev "socket,id=rs485,path=$RS485,server=on,wait=off"
-                           -device pci-serial,chardev=rs485 )
+                           -device "pci-serial,chardev=rs485" )
 [ -n "$QMP" ] && ARGS+=( -qmp "unix:$QMP,server=on,wait=off" )
 
 case "$DISPLAY_MODE" in
   off)      ARGS+=( -nographic ) ;;
-  on)       ARGS+=( -device virtio-gpu-device,xres=720,yres=720
+  on)       ARGS+=( -device "virtio-gpu-device,xres=720,yres=720"
                     -device virtio-tablet-device -serial mon:stdio ) ;;
-  headless) ARGS+=( -device virtio-gpu-device,xres=720,yres=720
+  headless) ARGS+=( -device "virtio-gpu-device,xres=720,yres=720"
                     -device virtio-tablet-device -display none -serial mon:stdio ) ;;
   *) echo "FATAL: --display must be off|on|headless" >&2; exit 1 ;;
 esac

@@ -10,10 +10,10 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"     # qemu/tests/
 QDIR="$(cd "$HERE/.." && pwd)"                           # qemu/
 
 ZIMAGE="${1:-}"
-[ -n "$ZIMAGE" ] && [ -f "$ZIMAGE" ] || {
+if [ -z "$ZIMAGE" ] || [ ! -f "$ZIMAGE" ]; then
   echo "FATAL: usage: $0 <zImage> [initramfs] — zImage missing or not a file: '${ZIMAGE:-}'" >&2
   exit 1
-}
+fi
 INITRD="${2:-$QDIR/out/initramfs.cpio.gz}"
 [ -f "$INITRD" ] || {
   echo "FATAL: initramfs not found at $INITRD — run qemu/mkinitramfs.sh first" >&2
@@ -30,7 +30,7 @@ trap 'rm -f "$LOG"' EXIT
 # NOTE: never pass `earlyprintk` — the config's DEBUG_UART_PHYS is the RV1106's
 # 0xff4c0000, which does not exist on -M virt.
 timeout 180 qemu-system-arm \
-  -M virt -cpu cortex-a7 -smp 1 -m 256M \
+  -M virt,highmem=off -cpu cortex-a7 -smp 1 -m 256M \
   -kernel "$ZIMAGE" -initrd "$INITRD" \
   -append "console=ttyAMA0 rdinit=/init" \
   -nographic -no-reboot </dev/null | tee "$LOG" || {

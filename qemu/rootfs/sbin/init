@@ -62,6 +62,13 @@ hostname warden-qemu
 echo "WARDEN-QEMU-ROOTFS-OK slot=${slot}"
 
 # Payload daemons (dropped into /usr/bin by qemu/mkimage.sh from qemu/payload/).
+# WARDEN_FLARE_INSECURE=1: the VM's portal is the desk mock over plain HTTP.
+# This is a dev instrument — a production device build never sets it.
+export WARDEN_FLARE_INSECURE=1
+# No HPMCU on -M virt: the mailbox SRAM (0xff6fff00) is unmapped bus space
+# here, and flared's /dev/mem poke dies with an external abort (SIGBUS). The
+# SCR1 supervisor state machine is modeled in sim/src/hpmcu.rs instead.
+export WARDEN_HPMCU=0
 for d in /usr/bin/warden-flared /usr/bin/warden-modbus; do
     if [ -x "$d" ]; then
         name="$(basename "$d")"

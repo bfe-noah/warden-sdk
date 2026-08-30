@@ -33,7 +33,7 @@ jobs:
         run: |
           set -o pipefail
           : > /tmp/test.log
-          for d in sim tools/config-lint; do
+          for d in sim tools/config-lint qemu/rs485-bridge; do
             echo "== cargo test in $d ==" | tee -a /tmp/test.log
             ( cd "$d" && cargo test --locked ) 2>&1 | tee -a /tmp/test.log
           done
@@ -85,6 +85,34 @@ jobs:
           cargo bench --locked --bench sim_bench 1> bench.txt 2> bench.json
           echo "== timings =="; cat bench.txt
           echo "== trend json =="; grep '"bench"' bench.json
+      - name: run rs485-bridge benchmarks
+        working-directory: qemu/rs485-bridge
+        run: |
+          cargo bench --locked --bench bridge_bench 1> bench.txt 2> bench.json
+          echo "== timings =="; cat bench.txt
+          echo "== trend json =="; grep '"bench"' bench.json
+
+  qemu-tools:
+    # The qemu/ device-sim build tooling must stay healthy on a plain hosted
+    # runner: shellcheck the scripts, build the initramfs (pinned busybox,
+    # fail-closed sha), and build the A/B disk image (unprivileged mkfs -d).
+    # Booting needs a zImage and therefore lives in kernel-build's smoke step.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck qemu scripts
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          shellcheck -x qemu/*.sh qemu/tests/*.sh
+      - name: cache pinned busybox
+        uses: actions/cache@v4
+        with:
+          path: qemu/out/busybox-armv7l
+          key: busybox-armv7l-${{ hashFiles('qemu/busybox.sha256') }}
+      - name: build initramfs
+        run: bash qemu/mkinitramfs.sh
+      - name: build A/B disk image
+        run: bash qemu/mkimage.sh
 
   patches-apply:
     # The RV1106 series must apply cleanly onto pristine linux-6.18.46.
@@ -167,6 +195,16 @@ jobs:
           # the ephemeral Luckfox SDK checkout path.
           CROSS_COMPILE: arm-linux-gnueabihf-
         run: bash build/build-kernel.sh
+      # Boot smoke under QEMU: the zImage this job just built must reach the
+      # initramfs sentinel on -M virt (verified 2026-08-29: the canonical
+      # config boots virt as-is). FAIL-CLOSED on a missing qemu-system-arm —
+      # provisioning the runner (one-time `apt-get install qemu-system-arm`
+      # on bfe-mpc-0640) is part of docs/ci-cd.md, never a silent skip.
+      - name: boot smoke (qemu-system-arm -M virt)
+        run: |
+          bash qemu/mkinitramfs.sh
+          bash qemu/tests/boot-smoke.sh \
+            "$RUNNER_TEMP/kbuild-out/linux-6.18.46/arch/arm/boot/zImage"
       # Best-effort: the build IS the gate. Uploading the zImage/dtb to GitHub
       # artifact storage can fail on an account-wide storage-quota hit (recalculated
       # every 6-12h) that has nothing to do with this build — don't red-X a good

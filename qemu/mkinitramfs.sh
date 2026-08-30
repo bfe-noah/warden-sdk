@@ -9,6 +9,7 @@
 set -euo pipefail
 
 QEMU_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=qemu/lib.sh disable=SC1091
 . "$QEMU_DIR/lib.sh"
 OUT="${OUT:-$QEMU_DIR/out}"
 
