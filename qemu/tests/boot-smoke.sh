@@ -27,13 +27,15 @@ command -v qemu-system-arm >/dev/null || {
 LOG="$(mktemp "${TMPDIR:-/tmp}/warden-qemu-smoke.XXXXXX")"
 trap 'rm -f "$LOG"' EXIT
 
-# NOTE: never pass `earlyprintk` — the config's DEBUG_UART_PHYS is the RV1106's
-# 0xff4c0000, which does not exist on -M virt.
-timeout 180 qemu-system-arm \
-  -M virt,highmem=off -cpu cortex-a7 -smp 1 -m 256M \
-  -kernel "$ZIMAGE" -initrd "$INITRD" \
-  -append "console=ttyAMA0 rdinit=/init" \
-  -nographic -no-reboot </dev/null | tee "$LOG" || {
+# Delegate the qemu invocation to run.sh (--no-disk) so the machine shape
+# (-M virt,highmem=off, cpu, memory, virtio topology) lives in exactly one
+# place — the two hand-copied invocations had already drifted once.
+# timeout -k: a wedged qemu that ignores SIGTERM gets SIGKILLed 10s later
+# instead of holding the job until the workflow-level timeout.
+timeout -k 10 180 bash "$QDIR/run.sh" \
+  --kernel "$ZIMAGE" --initrd "$INITRD" --no-disk \
+  --ssh-port 0 --http-port 0 --api-port 0 \
+  </dev/null | tee "$LOG" || {
     echo "FATAL: qemu exited non-zero (or hung until the 180s timeout)" >&2
     exit 1
   }

@@ -89,7 +89,8 @@ stage-2 init when present.
 - A serial port that is closed discards incoming bytes: hold ONE fd open
   across write and read when scripting the guest side of the RS485 bridge.
 - `highmem=off` and `-global virtio-mmio.force-legacy=false` are load-bearing
-  (32-bit ECAM reach; virtio-1-only gpu/input) — both live in run.sh.
+  (32-bit ECAM reach; virtio-1-only gpu/input) — both live ONLY in run.sh,
+  which every script (boot smoke included) delegates to.
 - Never pass `earlyprintk`: DEBUG_UART_PHYS is the RV1106's 0xff4c0000.
 
 ## Host requirements

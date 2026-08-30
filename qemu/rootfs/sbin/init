@@ -13,33 +13,29 @@ mount -t proc proc /proc
 mount -t sysfs sysfs /sys
 mount -t tmpfs tmpfs /tmp
 
-# Fresh devtmpfs — repopulate the by-name contract (slotctl.rs depends on it).
-mkdir -p /dev/block/by-name
-for uev in /sys/class/block/vda*/uevent; do
-    [ -f "$uev" ] || continue
-    partname=""
-    devname=""
-    while IFS='=' read -r k v; do
-        case "$k" in
-            PARTNAME) partname="$v" ;;
-            DEVNAME)  devname="$v" ;;
-        esac
-    done < "$uev"
-    [ -n "$partname" ] && [ -n "$devname" ] \
-        && ln -sf "/dev/$devname" "/dev/block/by-name/$partname"
-done
+. /etc/warden-lib.sh
 
-# Slot (whole-token parse, same rule as stage 1).
-slot="_a"
-for tok in $(cat /proc/cmdline); do
-    case "$tok" in
-        warden.slot=*) slot="${tok#warden.slot=}" ;;
-    esac
-done
+# Fresh devtmpfs — repopulate the by-name contract; same VALIDATED slot rule
+# as stage 1 (shared helper, so the two can never drift).
+warden_populate_by_name
+slot="$(warden_slot)"
 
 # The device's matched mounts: persistent state and the slot's oem partition.
-mount -t ext4 /dev/block/by-name/userdata /userdata || echo "init: userdata mount failed"
-mount -t ext4 "/dev/block/by-name/oem${slot}" /oem || echo "init: oem${slot} mount failed"
+# Fail-fast: a scenario against an image whose userdata cannot mount would
+# otherwise burn its whole deadline before failing generically. warden.shell
+# still gets a shell for post-mortem.
+mount_fatal() {
+    if ! mount -t ext4 "/dev/block/by-name/$1" "$2"; then
+        echo "WARDEN-QEMU-MOUNT-FAILED $1"
+        if grep -qw warden.shell /proc/cmdline; then
+            echo "warden.shell: post-mortem shell (exit powers off)"
+            setsid cttyhack sh
+        fi
+        poweroff -f
+    fi
+}
+mount_fatal userdata /userdata
+mount_fatal "oem${slot}" /oem
 mkdir -p /userdata/warden
 
 # RS485: warden-modbus hardcodes /dev/ttyS4 at compile time; alias it to the
@@ -47,10 +43,13 @@ mkdir -p /userdata/warden
 [ -c /dev/ttyS0 ] && ln -sf /dev/ttyS0 /dev/ttyS4
 
 # Network: slirp user-mode net on eth0 (DHCP, fallback to QEMU's static map).
+# The fallback keys off the interface actually having an address — udhcpc
+# exiting 0 only proves a lease, not that the hook script applied it.
 ip link set lo up
 if [ -e /sys/class/net/eth0 ]; then
     ip link set eth0 up
-    if ! udhcpc -i eth0 -n -q -t 5 -T 2 >/dev/null 2>&1; then
+    udhcpc -i eth0 -n -q -t 5 -T 2 >/dev/null 2>&1 || true
+    if ! ip -4 addr show dev eth0 | grep -q 'inet '; then
         ip addr add 10.0.2.15/24 dev eth0 2>/dev/null
         ip route replace default via 10.0.2.2 dev eth0
         echo "nameserver 10.0.2.3" > /etc/resolv.conf

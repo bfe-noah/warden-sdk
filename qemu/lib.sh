@@ -18,7 +18,7 @@ qemu_get_busybox() {
   BB="${BUSYBOX:-$out/busybox-armv7l}"
   if [ ! -f "$BB" ]; then
     qemu_log "downloading $BB_URL"
-    curl -fSL "$BB_URL" -o "$BB"
+    curl --retry 3 --retry-delay 5 -fSL "$BB_URL" -o "$BB"
   fi
   [ -f "$sha_file" ] || {
     echo "FATAL: no pinned sha256 for busybox (expected $sha_file) — refusing to build from an unverified binary" >&2

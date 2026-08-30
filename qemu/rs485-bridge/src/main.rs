@@ -2,10 +2,14 @@
 //! there); this file only parses arguments, connects sockets, and spawns the
 //! control listener.
 //!
-//! Typical use (matches qemu/run.sh --rs485):
+//! Typical use (matches qemu/run.sh --rs485). Put the sockets in a private
+//! per-run directory (mktemp -d) — short (AF_UNIX caps paths at ~108 chars)
+//! and not guessable/pre-creatable by other local users, unlike a fixed
+//! /tmp name:
 //!
-//!   qemu/run.sh --kernel ... --rs485 /tmp/warden-rs485.sock &
-//!   rs485-bridge --serial /tmp/warden-rs485.sock --control /tmp/warden-rs485-ctl.sock
+//!   d=$(mktemp -d /tmp/rs485.XXXXXX)
+//!   qemu/run.sh --kernel ... --rs485 "$d/serial.sock" &
+//!   rs485-bridge --serial "$d/serial.sock" --control "$d/ctl.sock"
 
 use std::io::{BufRead, BufReader, Write};
 use std::os::unix::net::{UnixListener, UnixStream};
@@ -31,10 +35,19 @@ fn main() {
 
     let mut args = std::env::args().skip(1);
     while let Some(a) = args.next() {
-        let mut val = |name: &str| args.next().unwrap_or_else(|| {
-            eprintln!("{name} needs a value");
-            usage()
-        });
+        let mut val = |name: &str| {
+            let v = args.next().unwrap_or_else(|| {
+                eprintln!("{name} needs a value");
+                usage()
+            });
+            // A following flag means the value was omitted — report the real
+            // problem instead of swallowing the flag as a bogus value.
+            if v.starts_with("--") {
+                eprintln!("{name} needs a value, got flag '{v}'");
+                usage()
+            }
+            v
+        };
         match a.as_str() {
             "--serial" => serial = Some(val("--serial")),
             "--control" => control = Some(val("--control")),
@@ -55,14 +68,32 @@ fn main() {
     let bus: &'static Bus = Box::leak(Box::new(Bus::new(address, regs, bits)));
 
     if let Some(path) = control {
-        let _ = std::fs::remove_file(&path); // stale socket from a previous run
+        // Clear a stale socket from a previous run. A failure here that is not
+        // "nothing to remove" (e.g. someone else's file behind /tmp's sticky
+        // bit) will make the bind below fail — surface both errors.
+        let removed = std::fs::remove_file(&path);
         let listener = UnixListener::bind(&path).unwrap_or_else(|e| {
             eprintln!("FATAL: cannot bind control socket {path}: {e}");
+            if let Err(re) = removed {
+                if re.kind() != std::io::ErrorKind::NotFound {
+                    eprintln!("       (removing the pre-existing file also failed: {re})");
+                }
+            }
             exit(1);
         });
         eprintln!("rs485: control socket at {path}");
         std::thread::spawn(move || {
-            for conn in listener.incoming().flatten() {
+            // Explicit error handling: `.flatten()` would turn a persistent
+            // accept() failure (fd exhaustion etc.) into a silent hot loop.
+            for conn in listener.incoming() {
+                let conn = match conn {
+                    Ok(c) => c,
+                    Err(e) => {
+                        eprintln!("rs485: control accept failed: {e} — backing off");
+                        std::thread::sleep(Duration::from_millis(200));
+                        continue;
+                    }
+                };
                 let reader = BufReader::new(conn.try_clone().expect("clone control conn"));
                 let mut writer = conn;
                 for line in reader.lines() {

@@ -62,11 +62,19 @@ python3 "$FLARE_EDGE/tools/mock-flare-portal.py" \
   --port "$PORT" --device "$DEVICE_ID:$API_KEY" \
   --wfw "$WORK/offer.wfw" > "$WORK/mock.log" 2>&1 &
 MOCK_PID=$!
+mock_ready=0
 for _ in $(seq 1 50); do
-  curl -so /dev/null "http://127.0.0.1:$PORT/" && break
+  curl -so /dev/null "http://127.0.0.1:$PORT/" && { mock_ready=1; break; }
   kill -0 "$MOCK_PID" 2>/dev/null || { echo "FATAL: mock portal died:" >&2; cat "$WORK/mock.log" >&2; exit 1; }
   sleep 0.2
 done
+# The loop must not fall through silently: an alive-but-unresponsive mock
+# would otherwise surface 420s later as an unrelated assertion timeout.
+[ "$mock_ready" = 1 ] || {
+  echo "FATAL: mock portal never answered on :$PORT within 10s" >&2
+  tail -10 "$WORK/mock.log" >&2
+  exit 1
+}
 echo "== mock portal on :$PORT, device $DEVICE_ID"
 
 # 2. image seeded with the portal URL + credentials.
@@ -79,11 +87,34 @@ bash "$QDIR/mkimage.sh" \
   --state "flare.api_key=$API_KEY" \
   --state "flare.site=qemu-devsim"
 
-# 3. boot the VM headless (daemons run; console log to file).
-bash "$QDIR/run.sh" --kernel "$ZIMAGE" \
-  --ssh-port $((PORT + 1)) --http-port $((PORT + 2)) --api-port $((PORT + 3)) \
-  > "$WORK/console.log" 2>&1 &
-QEMU_PID=$!
+# 3. boot the VM headless (daemons run; console log to file). Random hostfwd
+#    ports can collide with another process — detect the early qemu bind
+#    failure and retry with a fresh base rather than failing spuriously.
+QEMU_PID=""
+for _attempt in 1 2 3; do
+  VMBASE=$((20000 + RANDOM % 20000))
+  : > "$WORK/console.log"
+  bash "$QDIR/run.sh" --kernel "$ZIMAGE" \
+    --ssh-port "$VMBASE" --http-port $((VMBASE + 1)) --api-port $((VMBASE + 2)) \
+    > "$WORK/console.log" 2>&1 &
+  QEMU_PID=$!
+  sleep 3
+  if kill -0 "$QEMU_PID" 2>/dev/null; then
+    break
+  fi
+  if grep -aq 'Could not set up host forwarding' "$WORK/console.log"; then
+    echo "== hostfwd port collision on base $VMBASE — retrying"
+    QEMU_PID=""
+    continue
+  fi
+  echo "FATAL: VM died at launch:" >&2
+  tail -20 "$WORK/console.log" >&2
+  exit 1
+done
+if [ -z "$QEMU_PID" ] || ! kill -0 "$QEMU_PID" 2>/dev/null; then
+  echo "FATAL: could not launch the VM after 3 port attempts" >&2
+  exit 1
+fi
 
 # 4. assert: rootfs up, and the portal saw — from OUR device id — an
 #    authenticated check-in, the firmware desired-state pull, and the signed
@@ -99,6 +130,11 @@ while [ $SECONDS -lt $deadline ]; do
   grep -aq "GET /api/v1/devices/$DEVICE_ID/firmware -> 200" "$WORK/mock.log" && ok_fw=1
   grep -aq "GET /api/v1/devices/$DEVICE_ID/firmware/assets/.* -> 200" "$WORK/mock.log" && ok_asset=1
   [ $ok_report -eq 1 ] && [ $ok_fw -eq 1 ] && [ $ok_asset -eq 1 ] && break
+  grep -aq 'WARDEN-QEMU-MOUNT-FAILED' "$WORK/console.log" && {
+    echo "FATAL: guest partition mount failed (bad image?):" >&2
+    grep -a 'WARDEN-QEMU-MOUNT-FAILED' "$WORK/console.log" >&2
+    exit 1
+  }
   kill -0 "$QEMU_PID" 2>/dev/null || { echo "FATAL: VM exited early" >&2; tail -30 "$WORK/console.log" >&2; exit 1; }
   sleep 2
 done

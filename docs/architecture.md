@@ -65,7 +65,7 @@ supervisor logic runs in CI with no panel.
   the boot-mode register's survives-warm-reset / cleared-by-POR behaviour (the MaskRom
   recovery maneuver). The matching firmware-side `Bus` seam on flared's `devmem` — so
   the shipped ladder can be asserted to poke the confirmed offset, never the wrong-SoC
-  one — lands when flare-edge consumes warden-sdk (§7 item 3, maintainer-gated), not yet on
+  one — lands when flare-edge consumes warden-sdk (§8 item 3, maintainer-gated), not yet on
   flare-edge `main`.
 - **`modbus` — RS-485 device end.** Done. `ModbusSlave`: a byte-in/byte-out RTU slave
   (CRC16 byte-identical to the master, FC 0x01–0x06/0x0F/0x10/0x11, exception replies,

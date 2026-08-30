@@ -121,7 +121,9 @@ Evaluated against the stack philosophy — **openness, hardness, modernness**:
 ## Relationship to flare-edge
 
 flare-edge (WardenOS: the LVGL UI + the `flared` daemon) is the product; warden-sdk
-is what builds and tests it. During bootstrap, flare-edge consumes warden-sdk piece
+is what builds and tests it. flare-edge is BlueFlare's private companion repo —
+not publicly available — so flare-edge issue references and checkout paths in
+this repo's docs are context, not reachable links. During bootstrap, flare-edge consumes warden-sdk piece
 by piece: first the simulator (as a dev/test dependency), later the image build.
 No flare-edge code moves here — only the SDK/build/sim/driver-seam layer.
 

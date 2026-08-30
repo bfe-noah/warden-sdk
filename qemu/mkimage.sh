@@ -30,7 +30,17 @@ FW_VERSION="0.0.1"
 while [ $# -gt 0 ]; do
   case "$1" in
     --portal-url) PORTAL_URL="${2:?--portal-url needs a value}"; shift 2 ;;
-    --state)      STATE_KV+=("${2:?--state needs KEY=VALUE}"); shift 2 ;;
+    --state)
+      case "${2:?--state needs KEY=VALUE}" in
+        *=*) ;;
+        *) echo "FATAL: --state needs KEY=VALUE, got '$2'" >&2; exit 1 ;;
+      esac
+      case "${2%%=*}" in
+        *[!A-Za-z0-9_.]*|'')
+          echo "FATAL: --state key '${2%%=*}' must match [A-Za-z0-9_.]+ (it becomes a filename)" >&2
+          exit 1 ;;
+      esac
+      STATE_KV+=("$2"); shift 2 ;;
     --fw-version) FW_VERSION="${2:?--fw-version needs a value}"; shift 2 ;;
     *) echo "FATAL: unknown argument '$1' (usage: mkimage.sh [--portal-url URL] [--state KEY=VALUE]... [--fw-version V])" >&2; exit 1 ;;
   esac
@@ -83,7 +93,11 @@ place_partition() {
     rootfs_a|rootfs_b) stage="$ROOT" ;;
     userdata)          stage="$UDATA" ;;
     oem_a|oem_b)       stage="$SCRATCH/empty" ;;
-    *)                 stage="" ;;   # boot-chain partition: left zeroed
+    # Boot-chain partitions the VM never reads: present at the right offsets,
+    # left zeroed. Enumerated (not a wildcard) so a typo'd name in
+    # blkdevparts.conf fails HERE, not as a confusing mount error at boot.
+    env|idblock|uboot|misc|boot_a|boot_b|recovery) stage="" ;;
+    *) echo "FATAL: unknown partition name '$name' in blkdevparts.conf" >&2; exit 1 ;;
   esac
   # dd in 4K blocks — every offset in the canonical layout is 4K-aligned;
   # assert rather than assume, a misaligned write would corrupt a neighbor.
@@ -91,7 +105,8 @@ place_partition() {
     echo "FATAL: partition $name not 4K-aligned (off=$off size=$size)" >&2
     exit 1
   fi
-  DISK_END=$((off + size))
+  # Max, not last: blkdevparts grammar permits explicit @offsets out of order.
+  [ $((off + size)) -gt "$DISK_END" ] && DISK_END=$((off + size))
   [ -z "$stage" ] && return 0
   local img="$SCRATCH/$name.img"
   mkfs_part "$stage" "$size" "$img"

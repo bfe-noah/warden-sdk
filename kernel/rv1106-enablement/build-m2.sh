@@ -8,7 +8,7 @@
 # Defaults match this workspace.
 set -euo pipefail
 
-FE="${FE:-<flare-edge>}"
+FE="${FE:?set FE to a flare-edge checkout path}"
 KTREE="${KTREE:-$FE/research/linux-6.18.46}"
 SDK_TC="${SDK_TC:-$FE/sdk/tools/linux/toolchain/arm-rockchip830-linux-uclibcgnueabihf/bin}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

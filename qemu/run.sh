@@ -18,9 +18,9 @@
 #   --qmp SOCK         QMP unix socket (screendump, input-send-event, quit)
 #   --display MODE     off (default, -nographic) | on (gtk window) | headless
 #                      (virtio-gpu without a window; screendump via --qmp)
-#   --ssh-port N       hostfwd 127.0.0.1:N -> guest :22   (default 2222)
-#   --http-port N      hostfwd 127.0.0.1:N -> guest :80   (default 8080)
-#   --api-port N       hostfwd 127.0.0.1:N -> guest :28443 (default 28443)
+#   --ssh-port N       hostfwd 127.0.0.1:N -> guest :22   (default 2222; 0 disables)
+#   --http-port N      hostfwd 127.0.0.1:N -> guest :80   (default 8080; 0 disables)
+#   --api-port N       hostfwd 127.0.0.1:N -> guest :28443 (default 28443; 0 disables)
 #   --shell            interactive shell in the guest instead of daemon hold
 set -euo pipefail
 
@@ -76,13 +76,19 @@ fi
 # NOTE: never add `earlyprintk` — the config's DEBUG_UART_PHYS is the RV1106's
 # 0xff4c0000, which does not exist on -M virt.
 APPEND="console=ttyAMA0 rdinit=/init"
+# Port 0 disables a forward — a boot smoke needs no host ports and must not
+# fail on a busy default port.
+NETDEV="user,id=n0"
+[ "$SSH_PORT" != 0 ]  && NETDEV="$NETDEV,hostfwd=tcp:127.0.0.1:${SSH_PORT}-:22"
+[ "$HTTP_PORT" != 0 ] && NETDEV="$NETDEV,hostfwd=tcp:127.0.0.1:${HTTP_PORT}-:80"
+[ "$API_PORT" != 0 ]  && NETDEV="$NETDEV,hostfwd=tcp:127.0.0.1:${API_PORT}-:28443"
 ARGS=(
   -M "virt,highmem=off" -cpu cortex-a7 -smp 1 -m 256M
   # virtio-mmio defaults to the legacy (0.9) transport; virtio-gpu and
   # virtio-input are VERSION_1-only devices and never bind without this.
   -global "virtio-mmio.force-legacy=false"
   -kernel "$KERNEL" -initrd "$INITRD"
-  -netdev "user,id=n0,hostfwd=tcp:127.0.0.1:${SSH_PORT}-:22,hostfwd=tcp:127.0.0.1:${HTTP_PORT}-:80,hostfwd=tcp:127.0.0.1:${API_PORT}-:28443"
+  -netdev "$NETDEV"
   -device "virtio-net-device,netdev=n0"
   -no-reboot
 )

@@ -24,6 +24,11 @@ use warden_sim::ModbusSlave;
 /// response timeout is orders of magnitude larger.
 pub const DEFAULT_GAP: Duration = Duration::from_millis(10);
 
+/// Accumulation cap: a Modbus RTU ADU is at most 256 bytes, so anything past
+/// 2x that without an inter-frame gap is a misbehaving master streaming
+/// continuously — drop the buffer instead of growing without bound.
+const MAX_PENDING: usize = 512;
+
 /// The shared bus: the slave plus its declared dimensions. The sim's register
 /// setters panic on out-of-range indices (deliberate test-harness semantics);
 /// the control channel must bounds-check first so a typo in a scenario script
@@ -64,7 +69,17 @@ pub fn pump_serial(
                 }
                 return Ok(());
             }
-            Ok(n) => buf.extend_from_slice(&chunk[..n]),
+            Ok(n) => {
+                buf.extend_from_slice(&chunk[..n]);
+                if buf.len() > MAX_PENDING {
+                    eprintln!(
+                        "rs485: {} bytes buffered with no inter-frame gap — discarding \
+                         (misbehaving master streaming continuously?)",
+                        buf.len()
+                    );
+                    buf.clear();
+                }
+            }
             Err(e)
                 if e.kind() == std::io::ErrorKind::WouldBlock
                     || e.kind() == std::io::ErrorKind::TimedOut =>
@@ -127,10 +142,10 @@ pub fn handle_control_line(line: &str, bus: &Bus) -> String {
     if words.next().is_some() {
         return format!("err trailing arguments after '{cmd}'");
     }
-    let bound = |cmd: &str| match cmd {
-        "holding" | "input" | "get-holding" => bus.regs,
-        _ => bus.bits,
-    };
+    // Each arm states its own bound (bus.regs for register space, bus.bits for
+    // bit space) INLINE — a previous string-keyed lookup defaulted silently to
+    // the bit bound, which would have handed a future `get-input` command the
+    // wrong range and reintroduced the out-of-range panic this check prevents.
     let mut s = bus.slave.lock().unwrap();
     match (cmd, arg) {
         ("ping", None) => "ok".into(),
@@ -152,36 +167,60 @@ pub fn handle_control_line(line: &str, bus: &Bus) -> String {
             }
             _ => format!("err bad exception code '{c}'"),
         },
-        ("holding" | "input" | "coil" | "discrete", Some(kv)) => {
-            let (addr, val) = match kv.split_once('=') {
-                Some((a, v)) => (parse_u16(a), parse_u16(v)),
-                None => (None, None),
-            };
-            match (addr, val) {
-                (Some(a), _) if (a as usize) >= bound(cmd) => {
-                    format!("err address {a} out of range (0..{})", bound(cmd))
+        ("holding" | "input", Some(kv)) => match parse_addr_val(kv, bus.regs) {
+            Ok((a, v)) => {
+                if cmd == "holding" {
+                    s.set_holding(a, v);
+                } else {
+                    s.set_input(a, v);
                 }
-                (Some(a), Some(v)) => {
-                    match cmd {
-                        "holding" => s.set_holding(a as usize, v),
-                        "input" => s.set_input(a as usize, v),
-                        "coil" => s.set_coil(a as usize, v != 0),
-                        _ => s.set_discrete(a as usize, v != 0),
-                    }
-                    "ok".into()
+                "ok".into()
+            }
+            Err(e) => e,
+        },
+        ("coil" | "discrete", Some(kv)) => match parse_addr_val(kv, bus.bits) {
+            Ok((a, v)) => {
+                if cmd == "coil" {
+                    s.set_coil(a, v != 0);
+                } else {
+                    s.set_discrete(a, v != 0);
                 }
-                _ => format!("err expected <addr>=<value>, got '{kv}'"),
+                "ok".into()
             }
-        }
-        ("get-holding" | "get-coil", Some(a)) => match parse_u16(a) {
-            Some(a) if (a as usize) >= bound(cmd) => {
-                format!("err address {a} out of range (0..{})", bound(cmd))
-            }
-            Some(a) if cmd == "get-holding" => format!("ok {}", s.holding(a as usize)),
-            Some(a) => format!("ok {}", u8::from(s.coil(a as usize))),
-            None => format!("err bad address '{a}'"),
+            Err(e) => e,
+        },
+        ("get-holding", Some(a)) => match parse_addr(a, bus.regs) {
+            Ok(a) => format!("ok {}", s.holding(a)),
+            Err(e) => e,
+        },
+        ("get-coil", Some(a)) => match parse_addr(a, bus.bits) {
+            Ok(a) => format!("ok {}", u8::from(s.coil(a))),
+            Err(e) => e,
         },
         _ => format!("err unknown or malformed command '{line}'"),
+    }
+}
+
+/// Parse "<addr>=<value>" with the address bounds-checked against `bound`.
+fn parse_addr_val(kv: &str, bound: usize) -> Result<(usize, u16), String> {
+    let Some((a, v)) = kv.split_once('=') else {
+        return Err(format!("err expected <addr>=<value>, got '{kv}'"));
+    };
+    let (Some(a), Some(v)) = (parse_u16(a), parse_u16(v)) else {
+        return Err(format!("err expected <addr>=<value>, got '{kv}'"));
+    };
+    if (a as usize) >= bound {
+        return Err(format!("err address {a} out of range (0..{bound})"));
+    }
+    Ok((a as usize, v))
+}
+
+/// Parse a bare address, bounds-checked against `bound`.
+fn parse_addr(a: &str, bound: usize) -> Result<usize, String> {
+    match parse_u16(a) {
+        Some(v) if (v as usize) < bound => Ok(v as usize),
+        Some(v) => Err(format!("err address {v} out of range (0..{bound})")),
+        None => Err(format!("err bad address '{a}'")),
     }
 }
 
@@ -200,10 +239,13 @@ mod tests {
     use std::time::Duration;
     use warden_sim::modbus::{crc_ok, read_holding};
 
-    // Test gap is larger than DEFAULT_GAP so a loaded CI runner cannot split
-    // a frame that the test wrote in two deliberate chunks.
-    const GAP: Duration = Duration::from_millis(25);
-    const SETTLE: Duration = Duration::from_millis(100);
+    // Test gap is much larger than DEFAULT_GAP so a loaded CI runner cannot
+    // split a frame the test wrote in two deliberate chunks: the 2ms
+    // inter-chunk pause has a 60x margin against the 120ms dispatch gap
+    // (25ms gave only 12.5x and was flagged as a flake risk on contended
+    // 2-vCPU hosted runners).
+    const GAP: Duration = Duration::from_millis(120);
+    const SETTLE: Duration = Duration::from_millis(400);
 
     fn bus() -> Bus {
         let b = Bus::new(1, 16, 16);
@@ -221,7 +263,9 @@ mod tests {
     }
 
     fn read_reply(master: &UnixStream) -> Vec<u8> {
-        master.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
+        master
+            .set_read_timeout(Some(Duration::from_secs(2)))
+            .unwrap();
         let mut buf = [0u8; 256];
         let n = (&*master).read(&mut buf).expect("expected a reply frame");
         buf[..n].to_vec()
@@ -274,7 +318,10 @@ mod tests {
         with_pump(&s, |master| {
             (&*master).write_all(&read_holding(1, 2, 1)).unwrap();
             master
-                .set_read_timeout(Some(Duration::from_millis(200)))
+                // Well past GAP: the dropped frame must have been dispatched
+                // (and answered with silence) before the next request is
+                // written, or the two would merge in the pending buffer.
+                .set_read_timeout(Some(Duration::from_millis(500)))
                 .unwrap();
             let mut buf = [0u8; 16];
             assert!(

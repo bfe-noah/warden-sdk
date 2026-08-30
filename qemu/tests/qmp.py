@@ -11,7 +11,7 @@ import sys
 import time
 
 
-def rpc(sock, obj):
+def rpc(sock, sock_file, obj):
     sock.sendall((json.dumps(obj) + "\n").encode())
     while True:
         line = sock_file.readline()
@@ -29,15 +29,20 @@ def main():
     if len(sys.argv) < 3:
         sys.exit(__doc__)
     path, cmd = sys.argv[1], sys.argv[2]
-    global sock_file
+    need = {"screendump": 4, "tap": 5, "quit": 3}
+    if cmd not in need:
+        sys.exit(f"unknown command {cmd}\n{__doc__}")
+    if len(sys.argv) < need[cmd]:
+        sys.exit(f"{cmd}: missing argument(s)\n{__doc__}")
+
     s = socket.socket(socket.AF_UNIX)
     s.connect(path)
-    sock_file = s.makefile("r")
-    sock_file.readline()  # greeting banner
-    rpc(s, {"execute": "qmp_capabilities"})
+    f = s.makefile("r")
+    f.readline()  # greeting banner
+    rpc(s, f, {"execute": "qmp_capabilities"})
 
     if cmd == "screendump":
-        rpc(s, {"execute": "screendump", "arguments": {"filename": sys.argv[3]}})
+        rpc(s, f, {"execute": "screendump", "arguments": {"filename": sys.argv[3]}})
     elif cmd == "tap":
         x, y = int(sys.argv[3]), int(sys.argv[4])
         press = [
@@ -46,16 +51,14 @@ def main():
             {"type": "btn", "data": {"down": True, "button": "left"}},
         ]
         release = [{"type": "btn", "data": {"down": False, "button": "left"}}]
-        rpc(s, {"execute": "input-send-event", "arguments": {"events": press}})
+        rpc(s, f, {"execute": "input-send-event", "arguments": {"events": press}})
         # Hold the press across several LVGL indev poll periods (33 ms each):
         # an instantaneous press+release lands inside one poll and no click
         # is ever registered.
         time.sleep(0.2)
-        rpc(s, {"execute": "input-send-event", "arguments": {"events": release}})
+        rpc(s, f, {"execute": "input-send-event", "arguments": {"events": release}})
     elif cmd == "quit":
         s.sendall(b'{"execute":"quit"}\n')
-    else:
-        sys.exit(f"unknown command {cmd}")
 
 
 if __name__ == "__main__":

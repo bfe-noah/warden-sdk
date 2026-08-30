@@ -1,37 +1,19 @@
 #!/bin/busybox sh
 # Stage-1 rc: sourced by /init (still PID 1, initramfs root) when a virtio
-# disk is present. Emulates U-Boot's slot choice — parse warden.slot= from the
-# cmdline, mount that rootfs, switch_root into it. This is an EMULATION of the
-# A/B selection outcome, not the BCB/bootcount mechanism itself.
+# disk is present. Emulates U-Boot's slot choice — mount the validated slot's
+# rootfs and switch_root into it. This is an EMULATION of the A/B selection
+# outcome, not the BCB/bootcount mechanism itself.
+#
+# Every guarded failure path `return`s to /init (valid in a sourced script;
+# /init then falls through to shell/poweroff). The final exec is the one
+# unguardable step: if switch_root itself fails to launch, the shell — PID 1 —
+# exits and the kernel panics; the applet-existence check below catches the
+# only preventable variant of that.
 
-# /dev/block/by-name/<PARTNAME> symlinks: the contract flare-edge slotctl.rs
-# relies on. blkdevparts= gives every vda partition a PARTNAME in sysfs.
-mkdir -p /dev/block/by-name
-for uev in /sys/class/block/vda*/uevent; do
-    [ -f "$uev" ] || continue
-    partname=""
-    devname=""
-    while IFS='=' read -r k v; do
-        case "$k" in
-            PARTNAME) partname="$v" ;;
-            DEVNAME)  devname="$v" ;;
-        esac
-    done < "$uev"
-    [ -n "$partname" ] && [ -n "$devname" ] \
-        && ln -sf "/dev/$devname" "/dev/block/by-name/$partname"
-done
+. /etc/warden-lib.sh
 
-# Slot select: whole-token parse of warden.slot= (never a substring match).
-slot="_a"
-for tok in $(cat /proc/cmdline); do
-    case "$tok" in
-        warden.slot=*) slot="${tok#warden.slot=}" ;;
-    esac
-done
-case "$slot" in
-    _a|_b) ;;
-    *) echo "rc: bad warden.slot='$slot', falling back to _a"; slot="_a" ;;
-esac
+warden_populate_by_name
+slot="$(warden_slot)"
 
 root="/dev/block/by-name/rootfs${slot}"
 if [ ! -e "$root" ]; then
@@ -46,6 +28,11 @@ if ! mount -t ext4 "$root" /mnt; then
 fi
 if [ ! -x /mnt/sbin/init ]; then
     echo "rc: $root has no /sbin/init — staying in initramfs"
+    umount /mnt
+    return 0
+fi
+if ! command -v switch_root >/dev/null; then
+    echo "rc: busybox lacks switch_root — staying in initramfs"
     umount /mnt
     return 0
 fi

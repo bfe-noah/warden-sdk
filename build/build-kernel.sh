@@ -14,7 +14,9 @@
 #   JOBS             parallel make jobs (default: nproc)
 #   WARDEN_KCONFIG_FRAGMENT
 #                    optional kconfig fragment merged onto warden_defconfig
-#                    (qemu/configs/virt.fragment builds the QEMU -M virt variant)
+#                    (qemu/configs/virt.fragment builds the QEMU -M virt variant);
+#                    every fragment option is verified to have taken effect
+#   WARDEN_CCACHE=1  compile through ccache (CI caches ~/.ccache)
 #
 # Requires: `python` (not python3) on PATH — the SDK quirk; the CI runner provides
 # a project-local venv. Builds are SERIAL on the shared SDK box — never run two.
@@ -24,9 +26,8 @@ KVER=6.18.46
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"     # build/
 REPO="$(cd "$HERE/.." && pwd)"
 PATCHES="$REPO/patches"
-SHA_FILE="$HERE/linux-$KVER.tar.xz.sha256"
 JOBS="${JOBS:-$(nproc)}"
-URL="https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-$KVER.tar.xz"
+# The tarball URL + sha256 pin live in fetch-kernel-tarball.sh (shared with CI).
 
 # A caller-provided WORK (e.g. CI's ${{ github.workspace }}/kbuild-out, from which
 # artifacts are uploaded) is left intact; a scratch dir we mktemp'd here is our own
@@ -47,21 +48,9 @@ command -v python >/dev/null || { echo "need 'python' (not python3) on PATH — 
 # 1. obtain + verify the pristine tarball
 mkdir -p "$WORK"
 TB="${KERNEL_TARBALL:-$WORK/linux-$KVER.tar.xz}"
-if [ ! -f "$TB" ]; then
-  log "downloading $URL"
-  curl -fSL "$URL" -o "$TB"
-fi
-# Fail closed: a missing pin (e.g. forgotten on a KVER bump) or a KERNEL_TARBALL
-# pointed at an arbitrary file must refuse to build, never silently skip the check
-# — the pristine tarball is the ONLY external input and integrity is the whole point.
-[ -f "$SHA_FILE" ] || {
-  echo "FATAL: no pinned sha256 for linux-$KVER (expected $SHA_FILE) — refusing to build from an unverified tarball" >&2
-  exit 1
-}
-want="$(cat "$SHA_FILE")"
-got="$(sha256sum "$TB" | awk '{print $1}')"
-[ "$want" = "$got" ] || { echo "tarball sha256 mismatch: want $want got $got" >&2; exit 1; }
-log "tarball sha256 verified"
+# Fetch + fail-closed sha256 verification live in ONE place shared with CI
+# (a missing pin or a mismatch always refuses to build).
+bash "$HERE/fetch-kernel-tarball.sh" "$TB"
 
 # 2. extract pristine
 SRC="$WORK/linux-$KVER"
@@ -124,9 +113,41 @@ command -v "${CROSS_COMPILE}gcc" >/dev/null \
   || { echo "cross toolchain ${CROSS_COMPILE}gcc not on PATH (set SDK_TC, or CROSS_COMPILE to one that is)" >&2; exit 1; }
 make -C "$SRC" ARCH=arm CROSS_COMPILE="$CROSS_COMPILE" olddefconfig >/dev/null
 
+# Fragment took-effect assertion: merge_config -m only pastes text, and
+# olddefconfig silently resolves any symbol whose dependencies are unmet —
+# a fragment option could be dropped without a word. Verify every explicit
+# request in the fragment survived into the final .config; fail loud if not.
+if [ -n "${WARDEN_KCONFIG_FRAGMENT:-}" ]; then
+  frag_fail=0
+  while IFS= read -r line; do
+    case "$line" in
+      CONFIG_*=*)
+        grep -qxF "$line" "$SRC/.config" || {
+          echo "FATAL: fragment option '$line' did not take effect (unmet Kconfig dependency?)" >&2
+          frag_fail=1
+        } ;;
+      "# CONFIG_"*" is not set")
+        opt="${line#\# }"; opt="${opt% is not set}"
+        grep -qE "^$opt=" "$SRC/.config" && {
+          echo "FATAL: fragment disabled '$opt' but it is set in the final .config" >&2
+          frag_fail=1
+        } ;;
+    esac
+  done < "$FRAG"
+  [ "$frag_fail" = 0 ] || exit 1
+  log "fragment options verified in final .config"
+fi
+
+# Optional ccache (CI: cache ~/.ccache across dispatches; harmless if unset).
+KCC="${CROSS_COMPILE}gcc"
+if [ "${WARDEN_CCACHE:-0}" = 1 ]; then
+  command -v ccache >/dev/null || { echo "FATAL: WARDEN_CCACHE=1 but ccache not installed" >&2; exit 1; }
+  KCC="ccache ${CROSS_COMPILE}gcc"
+fi
+
 # 5. build zImage + the board dtb
 log "building zImage + rv1106-warden.dtb (-j$JOBS)"
-make -C "$SRC" ARCH=arm CROSS_COMPILE="$CROSS_COMPILE" -j"$JOBS" \
+make -C "$SRC" ARCH=arm CROSS_COMPILE="$CROSS_COMPILE" CC="$KCC" -j"$JOBS" \
   zImage rockchip/rv1106-warden.dtb
 
 Z="$SRC/arch/arm/boot/zImage"

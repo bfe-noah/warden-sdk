@@ -14,7 +14,7 @@ target/
 __pycache__/
 *.pyc
 
-# local tooling state (code-review harness cross-session memory, etc.)
+# local tooling state
 .claude/
 
 # driver MC/DC harness build dirs

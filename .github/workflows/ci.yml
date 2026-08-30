@@ -25,6 +25,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     outputs:
       passed: ${{ steps.result.outputs.passed }}
       coverage: ${{ steps.result.outputs.coverage }}
@@ -58,6 +59,7 @@ jobs:
   mcdc:
     # 100% MC/DC (condition coverage) enforced on every Tier-1 driver harness.
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - name: install gcc-14
@@ -78,6 +80,7 @@ jobs:
     # Smoke-run the sim micro-benchmarks and emit the ns/op trend JSON. Regression
     # gating against stored history is future work (no flare-edge pattern to copy).
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: run sim benchmarks
@@ -99,6 +102,7 @@ jobs:
     # fail-closed sha), and build the A/B disk image (unprivileged mkfs -d).
     # Booting needs a zImage and therefore lives in kernel-build's smoke step.
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: shellcheck qemu scripts
@@ -118,6 +122,7 @@ jobs:
   patches-apply:
     # The RV1106 series must apply cleanly onto pristine linux-6.18.46.
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: cache pristine kernel tarball
@@ -125,11 +130,8 @@ jobs:
         with:
           path: ~/linux-6.18.46.tar.xz
           key: linux-6.18.46-tarball
-      - name: fetch + verify pristine
-        run: |
-          [ -f ~/linux-6.18.46.tar.xz ] || \
-            curl -fSL https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.18.46.tar.xz -o ~/linux-6.18.46.tar.xz
-          echo "$(cat build/linux-6.18.46.tar.xz.sha256)  $HOME/linux-6.18.46.tar.xz" | sha256sum -c -
+      - name: fetch + verify pristine (shared fail-closed fetcher)
+        run: bash build/fetch-kernel-tarball.sh "$HOME/linux-6.18.46.tar.xz"
       - name: apply the series in order
         run: |
           tar -C /tmp -xf ~/linux-6.18.46.tar.xz
@@ -148,6 +150,7 @@ jobs:
   prune-artifacts:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       actions: write
     steps:
@@ -178,13 +181,14 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     needs: [prune-artifacts]
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - name: install cross toolchain + kernel build deps + qemu
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq gcc-arm-linux-gnueabihf qemu-system-arm \
-            cpio bc bison flex libssl-dev
+            cpio bc bison flex libssl-dev ccache
       - name: provision `python` (SDK quirk — build calls bare python)
         run: |
           mkdir -p "$RUNNER_TEMP/bin"
@@ -195,22 +199,32 @@ jobs:
         with:
           path: ~/linux-6.18.46.tar.xz
           key: linux-6.18.46-tarball
+      # Ephemeral runners rebuild the whole tree every dispatch (~9 min of
+      # compile); ccache recovers most of it for an unchanged/lightly-changed
+      # series. Keyed on the config + patches so a real change misses cleanly.
+      - name: cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: kbuild-ccache-${{ hashFiles('build/warden_defconfig', 'patches/*.patch') }}
+          restore-keys: kbuild-ccache-
       - name: build zImage + rv1106-warden.dtb
         env:
           # WORK must be OUTSIDE the repo checkout: build-kernel.sh applies the patch
           # series with `git apply`, which silently ignores out-of-subdir paths when
           # run inside another git repo (issue #1). $RUNNER_TEMP is outside the checkout.
           WORK: ${{ runner.temp }}/kbuild-out
-          # Reuse the cached tarball when present (build-kernel.sh still verifies
-          # the sha256 pin fail-closed either way; it downloads if the file is absent).
-          KERNEL_TARBALL: ~/linux-6.18.46.tar.xz
           # The kernel is freestanding; the generic arm cross toolchain links it.
           CROSS_COMPILE: arm-linux-gnueabihf-
+          WARDEN_CCACHE: 1
+          CCACHE_DIR: /home/runner/.ccache
+        # KERNEL_TARBALL is exported from the SHELL so $HOME expands — a literal
+        # `~` in a YAML env: value is never tilde-expanded and broke every
+        # dispatch until caught in review.
         run: |
-          [ -f ~/linux-6.18.46.tar.xz ] || \
-            curl -fSL https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.18.46.tar.xz \
-              -o ~/linux-6.18.46.tar.xz
+          export KERNEL_TARBALL="$HOME/linux-6.18.46.tar.xz"
           bash build/build-kernel.sh
+          ccache -s | head -4
       # Boot smoke under QEMU: the zImage this job just built must reach the
       # initramfs sentinel on -M virt (verified 2026-08-29: the canonical
       # config boots virt as-is). FAIL-CLOSED on a missing qemu-system-arm.
@@ -239,6 +253,7 @@ jobs:
     needs: [test]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: write
     steps:
