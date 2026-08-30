@@ -19,6 +19,12 @@
 #                    (qemu/configs/virt.fragment builds the QEMU -M virt variant);
 #                    every fragment option is verified to have taken effect
 #   WARDEN_CCACHE=1  compile through ccache (CI caches ~/.ccache)
+#   WARDEN_MODULES_COLLECT
+#                    space-separated in-tree dirs whose .ko files are wanted
+#                    (e.g. "drivers/net/wireless/aic8800"). Runs a full
+#                    `make modules` (the zImage target alone generates no
+#                    Module.symvers, so per-dir M= builds cannot link) and
+#                    collects the listed dirs' modules into $WORK/modules-out.
 #
 # Requires: `python` (not python3) on PATH — the SDK quirk; the CI runner provides
 # a project-local venv. Builds are SERIAL on the shared SDK box — never run two.
@@ -156,6 +162,28 @@ fi
 log "building zImage + rv1106-warden.dtb (-j$JOBS)"
 make -C "$SRC" ARCH=arm CROSS_COMPILE="$CROSS_COMPILE" CC="$KCC" -j"$JOBS" \
   zImage rockchip/rv1106-warden.dtb
+
+# Optional module set (issue #4: the panel loaded a stale 5.10 .ko because
+# this build never produced matched 6.18 modules). Full `make modules` is
+# required — zImage alone emits no Module.symvers, so a per-directory M=
+# build cannot resolve even core symbols. FAILS CLOSED if a listed dir
+# yields no modules.
+if [ -n "${WARDEN_MODULES_COLLECT:-}" ]; then
+  MODOUT="$WORK/modules-out"
+  rm -rf "$MODOUT"; mkdir -p "$MODOUT"
+  log "building modules (full set — needed for Module.symvers)"
+  make -C "$SRC" ARCH=arm CROSS_COMPILE="$CROSS_COMPILE" CC="$KCC" -j"$JOBS" modules
+  for d in $WARDEN_MODULES_COLLECT; do
+    [ -d "$SRC/$d" ] || { echo "FATAL: WARDEN_MODULES_COLLECT dir '$d' not in tree" >&2; exit 1; }
+    n=0
+    while IFS= read -r ko; do
+      cp "$ko" "$MODOUT/"; n=$((n + 1))
+    done < <(find "$SRC/$d" -name '*.ko')
+    [ "$n" -gt 0 ] || { echo "FATAL: no .ko produced under '$d'" >&2; exit 1; }
+    log "collected $n module(s) from $d"
+  done
+  ls -la "$MODOUT"
+fi
 
 Z="$SRC/arch/arm/boot/zImage"
 D="$SRC/arch/arm/boot/dts/rockchip/rv1106-warden.dtb"
