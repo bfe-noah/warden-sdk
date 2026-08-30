@@ -88,6 +88,12 @@ stage-2 init when present.
   and the physical reset stay emulated by the harness (ADR-0006 boundary);
   the VM exports `WARDEN_HARD_RESET=0` so flared's post-apply reset surfaces
   as a clean reported error instead of a /dev/mem fault.
+- `real-image-boot.sh <zImage> <rootfs.img> <oem.img>` — the real-image
+  milestone: an ACTUAL flare-edge build (matched pair, placed by
+  `mkimage.sh --rootfs-image/--oem-image`) boots through its own init chain
+  to a getty on the VM console; real daemons start. RV1106-only init steps
+  degrade as documented, and binaries predating known fixes reproduce their
+  bugs faithfully (a feature: the VM is a time machine for field issues).
 - Watchdog: `run.sh --watchdog`, arm `/dev/watchdog` in the guest, don't pet —
   the VM resets ~30 s later (verified). Do NOT combine with a flared payload
   expecting survival: flared pets only while the UI heartbeat is fresh.

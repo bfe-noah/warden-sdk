@@ -10,6 +10,10 @@
 # sudo), then dd'd into a sparse raw image.
 #
 # Usage: mkimage.sh [--portal-url URL] [--state KEY=VALUE]... [--fw-version V]
+#                   [--rootfs-image PATH] [--oem-image PATH]
+# --rootfs-image/--oem-image place REAL device images (raw ext4, e.g. a
+# flare-edge build's rootfs.img/oem.img matched pair) into slot A instead of
+# the busybox skeleton; slot B keeps the skeleton as a known-good fallback.
 # Env:
 #   BUSYBOX   path to a local busybox binary (skips the download; still verified)
 #   OUT       output dir (default: qemu/out); image at $OUT/disk.img
@@ -27,6 +31,8 @@ PATH="$PATH:/usr/sbin:/sbin"
 PORTAL_URL=""
 STATE_KV=()
 FW_VERSION="0.0.1"
+ROOTFS_IMAGE=""
+OEM_IMAGE=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --portal-url) PORTAL_URL="${2:?--portal-url needs a value}"; shift 2 ;;
@@ -45,6 +51,8 @@ while [ $# -gt 0 ]; do
       esac
       STATE_KV+=("$2"); shift 2 ;;
     --fw-version) FW_VERSION="${2:?--fw-version needs a value}"; shift 2 ;;
+    --rootfs-image) ROOTFS_IMAGE="${2:?--rootfs-image needs a path}"; shift 2 ;;
+    --oem-image)    OEM_IMAGE="${2:?--oem-image needs a path}"; shift 2 ;;
     *) echo "FATAL: unknown argument '$1' (usage: mkimage.sh [--portal-url URL] [--state KEY=VALUE]... [--fw-version V])" >&2; exit 1 ;;
   esac
 done
@@ -90,12 +98,40 @@ mkfs_part() {
 DISK="$OUT/disk.img"
 rm -f "$DISK"
 
+# dd a REAL raw image into a partition window, fail-closed on overflow.
+place_real_image() { # $1 src image, $2 offset, $3 partition size, $4 name
+  local srcsz
+  srcsz=$(stat -c %s "$1")
+  [ "$srcsz" -le "$3" ] || {
+    echo "FATAL: $4 image $1 ($srcsz bytes) exceeds the $3-byte partition" >&2
+    exit 1
+  }
+  dd if="$1" of="$DISK" bs=4096 seek=$(($2 / 4096)) conv=notrunc,sparse status=none
+  qemu_log "  $4: REAL image $(basename "$1") ($((srcsz / 1048576))M) @ $2"
+}
+
 place_partition() {
   local name="$1" off="$2" size="$3" stage=""
   case "$name" in
-    rootfs_a|rootfs_b) stage="$ROOT" ;;
+    rootfs_a)
+      if [ -n "$ROOTFS_IMAGE" ]; then
+        [ -f "$ROOTFS_IMAGE" ] || { echo "FATAL: --rootfs-image $ROOTFS_IMAGE not found" >&2; exit 1; }
+        DISK_END_TRACK "$off" "$size"
+        place_real_image "$ROOTFS_IMAGE" "$off" "$size" "$name"
+        return 0
+      fi
+      stage="$ROOT" ;;
+    oem_a)
+      if [ -n "$OEM_IMAGE" ]; then
+        [ -f "$OEM_IMAGE" ] || { echo "FATAL: --oem-image $OEM_IMAGE not found" >&2; exit 1; }
+        DISK_END_TRACK "$off" "$size"
+        place_real_image "$OEM_IMAGE" "$off" "$size" "$name"
+        return 0
+      fi
+      stage="$SCRATCH/empty" ;;
+    rootfs_b) stage="$ROOT" ;;
     userdata)          stage="$UDATA" ;;
-    oem_a|oem_b)       stage="$SCRATCH/empty" ;;
+    oem_b)             stage="$SCRATCH/empty" ;;
     # misc carries REAL AvbABData (byte 2048): flared's slotctl fail-closes
     # on a bad magic before any OTA write, so a zeroed misc blocks apply
     # scenarios. Bytes mirror flare-edge tools/mk-misc.py provisioning
@@ -107,14 +143,13 @@ place_partition() {
     env|idblock|uboot|boot_a|boot_b|recovery) stage="" ;;
     *) echo "FATAL: unknown partition name '$name' in blkdevparts.conf" >&2; exit 1 ;;
   esac
+  DISK_END_TRACK "$off" "$size"
   # dd in 4K blocks — every offset in the canonical layout is 4K-aligned;
   # assert rather than assume, a misaligned write would corrupt a neighbor.
   if [ $((off % 4096)) -ne 0 ] || [ $((size % 4096)) -ne 0 ]; then
     echo "FATAL: partition $name not 4K-aligned (off=$off size=$size)" >&2
     exit 1
   fi
-  # Max, not last: blkdevparts grammar permits explicit @offsets out of order.
-  [ $((off + size)) -gt "$DISK_END" ] && DISK_END=$((off + size))
   [ -z "$stage" ] && return 0
   local img="$SCRATCH/$name.img"
   if [ "$stage" = "__misc__" ]; then
@@ -143,6 +178,8 @@ PYMISC
 }
 
 DISK_END=0
+# Max, not last: blkdevparts grammar permits explicit @offsets out of order.
+DISK_END_TRACK() { [ $(($1 + $2)) -gt "$DISK_END" ] && DISK_END=$(($1 + $2)); return 0; }
 qemu_log "building $DISK ($WARDEN_BLKDEVPARTS)"
 truncate -s 0 "$DISK"
 qemu_each_partition place_partition
