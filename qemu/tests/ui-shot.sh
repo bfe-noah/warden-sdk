@@ -123,6 +123,7 @@ done
 # Tap the "Metrics" tab: pixel (373,40) of 720x720 scaled to the QMP absolute
 # range 0..32767 — switching tabs must repaint the content area. Poll for the
 # repaint rather than guessing a delay.
+vm_alive_or_die
 qmp tap 16975 1820
 changed=0
 # 90s, matching the first-frame budget: TCG repaints are CPU-bound and a

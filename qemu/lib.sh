@@ -16,14 +16,16 @@ qemu_get_busybox() {
   local out="${OUT:-$QEMU_DIR/out}"
   mkdir -p "$out"
   BB="${BUSYBOX:-$out/busybox-armv7l}"
-  if [ ! -f "$BB" ]; then
-    qemu_log "downloading $BB_URL"
-    curl --retry 3 --retry-delay 5 --retry-connrefused -fSL "$BB_URL" -o "$BB"
-  fi
+  # Pin first: a missing pin refuses BEFORE downloading, same ordering as
+  # build/fetch-kernel-tarball.sh.
   [ -f "$sha_file" ] || {
     echo "FATAL: no pinned sha256 for busybox (expected $sha_file) — refusing to build from an unverified binary" >&2
     exit 1
   }
+  if [ ! -f "$BB" ]; then
+    qemu_log "downloading $BB_URL"
+    curl --retry 3 --retry-delay 5 --retry-connrefused -fSL "$BB_URL" -o "$BB"
+  fi
   local want got
   want="$(cat "$sha_file")"
   got="$(sha256sum "$BB" | awk '{print $1}')"

@@ -129,11 +129,14 @@ if [ -n "${WARDEN_KCONFIG_FRAGMENT:-}" ]; then
           frag_fail=1
         } ;;
       "# CONFIG_"*" is not set")
-        # Symmetric with the enable arm: the exact disable line must be
-        # present. A symbol absent entirely means a typo'd/renamed option,
-        # not a successful disable.
-        grep -qxF "$line" "$SRC/.config" || {
-          echo "FATAL: fragment line '$line' not reflected in the final .config" >&2
+        # A disable succeeded if the symbol is NOT set: Kconfig writes either
+        # the literal "is not set" line or (when dependencies gate the symbol
+        # out) nothing at all — both are valid outcomes. Only "still =value"
+        # is a failed disable. (A typo'd symbol disables nothing and is
+        # harmless by construction.)
+        opt="${line#\# }"; opt="${opt% is not set}"
+        grep -qE "^$opt=" "$SRC/.config" && {
+          echo "FATAL: fragment disabled '$opt' but it is still set in the final .config" >&2
           frag_fail=1
         } ;;
     esac

@@ -1,9 +1,9 @@
 # CI/CD
 
 `.github/workflows/ci.yml` — every job runs on GitHub-hosted `ubuntu-latest`.
-No self-hosted runner is (or may be) reachable from this repo's workflows:
-the repo is public, and a fork PR that gets one approved run could
-otherwise execute code on private infrastructure (ADR-0007).
+No self-hosted runner is (or may be) reachable from this repo's workflows —
+on a public repo, a fork PR that gets one approved run could otherwise
+execute code on private infrastructure (ADR-0007).
 
 ## Jobs
 
