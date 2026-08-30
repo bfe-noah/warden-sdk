@@ -3,7 +3,7 @@ name = "warden-sim"
 version = "0.1.0"
 edition = "2021"
 description = "Host-side hardware simulator for WardenOS: register/SRAM bus, HPMCU (RISC-V) watchdog, RGA, NPU. Lets driver and supervisor logic run and be tested with no panel."
-license = "MIT OR Apache-2.0"
+license = "GPL-2.0-only"
 
 [lib]
 name = "warden_sim"

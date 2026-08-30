@@ -124,3 +124,12 @@ flare-edge (WardenOS: the LVGL UI + the `flared` daemon) is the product; warden-
 is what builds and tests it. During bootstrap, flare-edge consumes warden-sdk piece
 by piece: first the simulator (as a dev/test dependency), later the image build.
 No flare-edge code moves here — only the SDK/build/sim/driver-seam layer.
+
+## License
+
+**GPL-2.0-only**, repo-wide (see `LICENSE`; a per-file SPDX identifier governs
+where one is present, e.g. a few GPL-2.0-or-later kernel files). The kernel
+material in `patches/` and `kernel/rv1106-enablement/` is derivative of the
+Linux kernel and of GPL-2.0 vendor code either way — per-driver origin and
+license are tracked in `kernel/rv1106-enablement/PROVENANCE.md`. Contributions
+are accepted under the same license (inbound = outbound).
