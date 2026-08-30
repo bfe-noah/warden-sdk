@@ -2,8 +2,9 @@
 #
 # Policy (mirrors flare-edge): only GitHub-owned actions get the repo token; the one
 # third-party helper (taiki-e/install-action) is pinned and never handed a token.
-# Host-testable jobs run on GitHub-hosted runners; only the heavy kernel build uses
-# the self-hosted [self-hosted, warden-sdk] runner on bfe-mpc-0640 (added in P5).
+# Every job runs on GitHub-hosted runners — no self-hosted runner may be reachable
+# from this repo's workflows (ADR-0007: public-repo fork PRs would otherwise be
+# able to run code on private infrastructure). kernel-build is dispatch-only.
 name: ci
 
 on:
@@ -170,36 +171,49 @@ jobs:
           exit 0
 
   kernel-build:
-    # Full hermetic build on the warden-sdk self-hosted runner (bfe-mpc-0640,
-    # ADR-0004). Manual-dispatch by design — a full kernel build is too heavy to run
-    # on every push; trigger it via `gh workflow run ci.yml` / the Actions UI.
+    # Full hermetic build on a GitHub-hosted runner (ADR-0007; supersedes the
+    # self-hosted half of ADR-0004 — a self-hosted runner must never be reachable
+    # from a public repo's workflows). Manual-dispatch by design — a full kernel
+    # build is heavy; trigger via `gh workflow run ci.yml` / the Actions UI.
     if: github.event_name == 'workflow_dispatch'
     needs: [prune-artifacts]
-    runs-on: [self-hosted, warden-sdk]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: install cross toolchain + kernel build deps + qemu
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gcc-arm-linux-gnueabihf qemu-system-arm \
+            cpio bc bison flex libssl-dev
       - name: provision `python` (SDK quirk — build calls bare python)
         run: |
           mkdir -p "$RUNNER_TEMP/bin"
           ln -sf "$(command -v python3)" "$RUNNER_TEMP/bin/python"
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - name: cache pristine kernel tarball
+        uses: actions/cache@v4
+        with:
+          path: ~/linux-6.18.46.tar.xz
+          key: linux-6.18.46-tarball
       - name: build zImage + rv1106-warden.dtb
         env:
           # WORK must be OUTSIDE the repo checkout: build-kernel.sh applies the patch
           # series with `git apply`, which silently ignores out-of-subdir paths when
           # run inside another git repo (issue #1). $RUNNER_TEMP is outside the checkout.
           WORK: ${{ runner.temp }}/kbuild-out
-          JOBS: 4   # belt-and-braces bound in addition to the runner's cgroup cap
-          # The kernel is freestanding; use the stable generic arm cross toolchain
-          # (Debian gcc-arm-linux-gnueabihf on the runner) rather than depending on
-          # the ephemeral Luckfox SDK checkout path.
+          # Reuse the cached tarball when present (build-kernel.sh still verifies
+          # the sha256 pin fail-closed either way; it downloads if the file is absent).
+          KERNEL_TARBALL: ~/linux-6.18.46.tar.xz
+          # The kernel is freestanding; the generic arm cross toolchain links it.
           CROSS_COMPILE: arm-linux-gnueabihf-
-        run: bash build/build-kernel.sh
+        run: |
+          [ -f ~/linux-6.18.46.tar.xz ] || \
+            curl -fSL https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.18.46.tar.xz \
+              -o ~/linux-6.18.46.tar.xz
+          bash build/build-kernel.sh
       # Boot smoke under QEMU: the zImage this job just built must reach the
       # initramfs sentinel on -M virt (verified 2026-08-29: the canonical
-      # config boots virt as-is). FAIL-CLOSED on a missing qemu-system-arm —
-      # provisioning the runner (one-time `apt-get install qemu-system-arm`
-      # on bfe-mpc-0640) is part of docs/ci-cd.md, never a silent skip.
+      # config boots virt as-is). FAIL-CLOSED on a missing qemu-system-arm.
       - name: boot smoke (qemu-system-arm -M virt)
         run: |
           bash qemu/mkinitramfs.sh
@@ -208,7 +222,7 @@ jobs:
       # Best-effort: the build IS the gate. Uploading the zImage/dtb to GitHub
       # artifact storage can fail on an account-wide storage-quota hit (recalculated
       # every 6-12h) that has nothing to do with this build — don't red-X a good
-      # kernel build over it. The outputs also remain on the self-hosted runner host.
+      # kernel build over it.
       - uses: actions/upload-artifact@v4
         continue-on-error: true
         with:

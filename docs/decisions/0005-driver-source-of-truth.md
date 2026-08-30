@@ -12,7 +12,7 @@ scratch tree (`flare-edge/research/linux-6.18.46/`).
 Bring **hardened copies into `warden-sdk/drivers/`** as the canonical source-of-truth,
 each with its HAL seam and a 100% MC/DC host harness. The RV1106 kernel deltas are
 formalized as a patch series in `patches/`. flare-edge consumes warden-sdk later
-(separate, [maintainer]-gated step).
+(separate, maintainer-gated step).
 
 ## Consequences
 - Realizes the seam architecture (ADR-referenced in `docs/architecture.md`).

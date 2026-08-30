@@ -97,5 +97,5 @@ stage-2 init when present.
 `qemu-system-arm` (Debian 13 ships QEMU 10), `curl`, `cpio`, `mkfs.ext4`,
 `gcc-arm-linux-gnueabihf` (kernel build), `python3` (+`cryptography` for the
 portal scenario's `.wfw` signing). CI: the hosted `qemu-tools` job builds the
-tooling; the boot smoke runs on the self-hosted kernel-build runner, which
-needs a one-time `apt-get install qemu-system-arm` (see docs/ci-cd.md).
+tooling; the boot smoke runs inside the (also hosted, dispatch-only)
+`kernel-build` job, which apt-installs its own toolchain and qemu (ADR-0007).

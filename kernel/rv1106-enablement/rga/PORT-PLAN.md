@@ -294,8 +294,8 @@ implied by this kernel port.
 - **CMA pool sizing** — 10 MiB was sized against the 5.10 image's actual usage (graph
   canvas + scanout mirror at 720×720×4B ≈ 2 MiB each); carry the same size unless a
   future accounting shows it's tight.
-- **Driver-parity table** (`../DRIVER-PARITY.md`) should move `RGA 2D (rga2)` from ⬜ to
-  🔨/✅ as these steps land, same convention as every other M-milestone row.
+- **Driver-parity table** (`../DRIVER-PARITY.md`) should move `RGA 2D (rga2)` from [ ] to
+  [wip]/[x] as these steps land, same convention as every other M-milestone row.
 
 ## Sources
 

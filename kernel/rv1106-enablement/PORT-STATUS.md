@@ -20,7 +20,7 @@ from the **vendor 5.10.160** tree, no plan44 code, built with our
 - rv1106's siblings **rv1126/rv1108 exist in both trees**, so their 5.10→6.18 delta is a
   working template for the framework API changes.
 
-## M1 — clock driver (`clk-rv1106.c`, 1294 lines): ✅ COMPILES CLEAN on 6.18
+## M1 — clock driver (`clk-rv1106.c`, 1294 lines): [x] COMPILES CLEAN on 6.18
 Build-fix loop against 6.18 — `clk-rv1106.o` (85732 bytes) builds with no errors.
 Fixed (captured in `clk/`):
 1. **Kconfig + Makefile hooks** — added `CONFIG_CLK_RV1106` (mirrors CLK_RV1126).
@@ -31,7 +31,7 @@ Fixed (captured in `clk/`):
 4. **`rockchip_clk_register_armclk` signature change** — 5.10 took
    `(num_parents, parent_clk, alt_parent_clk)`; 6.18 takes `(parent_names[], num_parents)`
    and drives the mux from `reg_data.mux_core_main/alt`. Adapted the call to the 6.18 form
-   using a parent-names array (sibling-delta from rv1126). **⚠ PORT-VERIFY**: the mux input
+   using a parent-names array (sibling-delta from rv1126). **PORT-VERIFY**: the mux input
    list `{ "gpll","cpll","apll" }` and the `mux_core_main/alt=2` mapping are a best-effort
    from the 5.10 intent (main=apll) — they set the **CPU clock source**, so they must be
    checked against the RV1106 `CORECLKSEL_CON` register map (TRM) and validated on hardware
@@ -39,9 +39,9 @@ Fixed (captured in `clk/`):
 
 5. **`CLK_FRAC_DIVIDER_NO_LIMIT`** — Rockchip downstream-only frac-divider flag (6 uses on
    the UART frac clocks); mainline has no min/max opt-out, mapped to 0 (default limit).
-   **⚠ PORT-VERIFY**: UART fractional baud accuracy.
+   **PORT-VERIFY**: UART fractional baud accuracy.
 
-## M1 — pinctrl (`pinctrl-rockchip.c/.h`): ✅ COMPILES CLEAN on 6.18
+## M1 — pinctrl (`pinctrl-rockchip.c/.h`): [x] COMPILES CLEAN on 6.18
 `pinctrl-rockchip.o` (173688 bytes) builds no-errors. Transplanted from vendor 5.10 (effort S,
 zero API drift — the survey's assessment held): added `RV1106` to the type enum; a 159-line
 block of `RV1106_DRV/PULL/SMT_*` macros + 3 `rv1106_calc_*_reg_and_bit()` functions; `case
@@ -58,12 +58,12 @@ RV1106:` in the 3 pull functions + the RK3568 drive-strength group; `rv1106_pin_
 - **Still PORT-VERIFY:** GPIO4 bank pin-count (`pin_banks` says 24, DT `gpio-ranges` says 32) —
   carried from vendor unchanged; needs TRM/hardware.
 
-## M1 — mach: ✅ DONE
+## M1 — mach: DONE
 `mach-rockchip` RV1106/RV1103 SoC recognition added as a DT-compat entry (no
 `CPU_RV1106` symbol recreated). Captured as `mach/0001-rv1106-soc-recognition.patch`.
 **M1 is complete: clk + pinctrl + mach all compile clean on 6.18.**
 
-## M2 — earlycon build: ✅ DONE (boot pending hardware)
+## M2 — earlycon build: DONE (boot pending hardware)
 The first full kernel build with our SoC drivers, 2026-08-24:
 - **`multi_v7_defconfig` + `configs/m2-earlycon.fragment` builds an 11.8 MB zImage**
   with `clk-rv1106.o` (85732 B) and `pinctrl-rockchip.o` (173688 B, our rv1106 data)
@@ -80,7 +80,7 @@ The first full kernel build with our SoC drivers, 2026-08-24:
 console baud (1.5M assumed). A wrong DDR/clock value silently hangs before or just after
 earlycon.
 
-## M2 — boot: ✅ DONE — "it's alive" on warden-c8a3 (2026-08-24)
+## M2 — boot: DONE — "it's alive" on warden-c8a3 (2026-08-24)
 The self-built **Linux 6.18.46 boots on real RV1106 hardware**, through our ported
 drivers, verified over the serial console. It reaches earlycon, the arch timer
 (BogoMIPS calibrated), **our `clk-rv1106` CRU driver**, pinctrl, and the mainline
@@ -105,7 +105,7 @@ Three bring-up bugs were found and fixed on hardware, all captured in the DT:
 comes up far enough to clock the UART and the arch timer on hardware. A wrong CPU
 mux/PLL would show later (cpufreq / peripheral rates), still to be checked.
 
-## M3 — rootfs boot: ✅ DONE — the full WardenOS runs on the 6.18 kernel (2026-08-24)
+## M3 — rootfs boot: DONE — the full WardenOS runs on the 6.18 kernel (2026-08-24)
 Adding the eMMC (`dw_mmc`) node to the DT was all M3 needed — the drivers are already
 in the config. On hardware:
 ```

@@ -120,7 +120,7 @@ cfg80211.ko → libarc4.ko → ctr.ko → ccm.ko → libaes.ko → aes_generic.k
 see `insmod_wifi.sh:126-137` and `wifi-bluetooth-aic8800.md`); nothing to
 replicate there. The crypto modules (arc4/ctr/ccm/aes) are dependencies of the
 driver's internal key-handling, not aic8800-specific — confirm they're already
-`=y`/reachable in the 6.18 config (crypto is currently listed as "⬜ batch2" in
+`=y`/reachable in the 6.18 config (crypto is currently listed as "[ ] batch2" in
 `../DRIVER-PARITY.md`; flip alongside this work).
 
 **DT node — correction to the task's framing.** The task description assumed
@@ -295,7 +295,7 @@ No breaking changes found in `sdio_driver`, `sdio_claim_host`/`release_host`,
 `sdio_readb`/`writesb`, `sdio_set_block_size` between 5.10 and 6.18 (low
 research depth on this axis — treat as low-risk, smoke-test rather than
 line-audit). The mainline `dw_mmc`/`dw_mmc-rockchip` host driver is already
-proven on 6.18 for eMMC (`../DRIVER-PARITY.md`: `dw_mmc (eMMC) | mainline | ✅ M3`)
+proven on 6.18 for eMMC (`../DRIVER-PARITY.md`: `dw_mmc (eMMC) | mainline | [x] M3`)
 and `CONFIG_MMC_DW_ROCKCHIP=y` is already in the live `.config` — the SDIO
 *controller* side of this port is de-risked; only the AIC8800 *card driver*
 above the `sdmmc` bus is new work.
@@ -410,7 +410,7 @@ CONFIG_BT_HCIUART_H4=y       # already =y (H4 is the transport this board's BT a
                               #   per hardware-86-panel.md: UART1/ttyS1, hciattach -s 1500000
                               #   ... any 1500000 flow nosleep)
 CONFIG_CRYPTO_ARC4=y CONFIG_CRYPTO_CTR=y CONFIG_CRYPTO_CCM=y CONFIG_CRYPTO_AES=y  # driver's
-                              #   internal key-handling deps, currently "⬜ batch2" in
+                              #   internal key-handling deps, currently "[ ] batch2" in
                               #   ../DRIVER-PARITY.md — confirm =y, not =m, alongside this work
 ```
 Do **not** enable `CONFIG_MAC80211` for this driver — confirmed by source
@@ -537,7 +537,7 @@ Follow the existing A/B `_b`-slot hardware-verification loop
    attaches and `hciattach -s 1500000 /dev/ttyS1 any 1500000 flow nosleep`
    (the known-good invocation) brings up an HCI device.
 8. **Update on landing**: mark the `AIC8800 wifi (bsp/fdrv)` and
-   `AIC8800 BT (btlpm)` rows in `../DRIVER-PARITY.md` ✅, with the same
+   `AIC8800 BT (btlpm)` rows in `../DRIVER-PARITY.md` [x], with the same
    "hardware-verified, not just compiled" bar every other row uses.
 
 ## Sources

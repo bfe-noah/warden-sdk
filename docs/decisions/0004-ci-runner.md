@@ -1,6 +1,8 @@
 # ADR 0004 — CI/CD runner: 3rd repo-scoped self-hosted runner on 0640
 
-**Status:** Accepted (2026-08-25).
+**Status:** Superseded in part by ADR-0007 (2026-08-30) — `kernel-build` moved
+to GitHub-hosted runners for the public repo and the self-hosted registration
+is retired. Original decision below, kept for the record. (2026-08-25.)
 
 ## Context
 The heavy kernel/firmware build needs the SDK toolchain and Buildroot's baked-in

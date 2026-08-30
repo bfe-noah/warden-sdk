@@ -4,10 +4,10 @@ Goal ([maintainer]): port/enable **every** remaining RV1106 hardware capability 
 self-built Linux 6.18.46, open-source-first, verify on hardware, so the display's
 last mile can start in the morning. Runs on warden-c8a3 (`_b` slot = our 6.18).
 
-## ✅ Verified on hardware this run
+## Verified on hardware this run
 | Driver | Evidence |
 |---|---|
-| **AIC8800 wifi** (M5) | wlan0 up ([device-mac]), `iw scan` found the site AP −43 dBm + others. Modules (built-in deadlocks the two-stage SDIO bring-up). |
+| **AIC8800 wifi** (M5) | wlan0 up, `iw scan` found the site AP at −43 dBm + others. Modules (built-in deadlocks the two-stage SDIO bring-up). |
 | **TRNG** | `/dev/hwrng`, `rng_current=rockchip-rng`, real entropy. |
 | **OTP/nvmem** | `rockchip-otp0` reads chip id ("MR1"). |
 | **GMAC** (wired eth) | `eth0: Link is Up - 100 Mbps/Full`. |

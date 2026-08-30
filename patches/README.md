@@ -27,6 +27,14 @@ with `../build/warden_defconfig` → `zImage` + `rv1106-warden.dtb`).
 | `70-audio-codec.patch` | `rv1106_codec` + I2S wiring |
 | `80-misc-thermal-rtc-adc.patch` | tsadc, rtc-rockchip, saradc, trng, otp, gmac, goodix touch |
 
+## License
+
+Everything in this directory is a derivative work of the Linux kernel and of
+GPL-2.0 vendor kernel code: **GPL-2.0-only** (or the per-file SPDX identifier
+where one is present), regardless of the MIT/Apache dual license the rest of
+the repository uses. See the top-level `LICENSE` and
+`kernel/rv1106-enablement/PROVENANCE.md` (per-driver origin + license).
+
 ## Provenance & regeneration
 
 Baseline: `linux-6.18.46` from kernel.org (`build/linux-6.18.46.tar.xz.sha256`

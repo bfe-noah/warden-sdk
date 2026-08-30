@@ -8,7 +8,7 @@ target as the rest of this port: **Linux 6.18.46 vanilla**
 (`flare-edge/research/linux-6.18.46/`), forward-ported from vendor 5.10.160, built
 with our `arm-rockchip830-...-gcc 8.3` toolchain — see `../PORT-STATUS.md` and
 `../../docs/bringup.md` for the method and milestones this slots into (M6, listed
-in `../DRIVER-PARITY.md` as "NPU (rknpu, ff660000) | out-of-tree | ⬜ M6").
+in `../DRIVER-PARITY.md` as "NPU (rknpu, ff660000) | out-of-tree | [ ] M6").
 
 Builds on `warden-sdk/docs/npu-graphics-feasibility.md`, which already read this
 same driver source to answer a narrower question (can the NPU do graphics — no).

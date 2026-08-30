@@ -224,7 +224,7 @@ stuck in `deferred probe pending: asoc-simple-card: parse error`, no card.
 i2s0_8ch node already carries the `rockchip,rv1126-i2s-tdm` fallback compatible +
 `#sound-dai-cells=<0>`, so the mainline driver binds it).
 
-**✅ VERIFIED on c8a3:** `/proc/asound/cards` → `0 [rv1106acodec]: simple-card -
+**VERIFIED on c8a3:** `/proc/asound/cards` → `0 [rv1106acodec]: simple-card -
 rv1106-acodec`; `aplay -l` → `card 0: rv1106acodec, device 0:
 ffae0000.i2s-rv1106-hifi`; `/dev/snd/` has `controlC0 pcmC0D0p pcmC0D0c` (playback
 + capture). Audible speaker test deferred to the bench (with the display).

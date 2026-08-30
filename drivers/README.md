@@ -38,7 +38,7 @@ is already modelled and tested here** in `../sim/`:
 **Why the Tier-2 *source* isn't vendored here yet:** `modbus_engine.c` and
 `warden_rga.c` pull in shared UI headers (`platform.h`, `settings.h`, `lv_*`) and
 librga. Copying those in would duplicate exactly the shared surface the
-**flare-edge↔warden-sdk unification** (ADR-0003/0005, a separate [maintainer]-gated step) is
+**flare-edge↔warden-sdk unification** (ADR-0003/0005, a separate maintainer-gated step) is
 meant to resolve cleanly. So the Tier-2 *models* (the hardware ends) live here now;
 the Tier-2 *driver sources* migrate in with the unification, at which point their
 existing flare-edge harnesses point at this repo.

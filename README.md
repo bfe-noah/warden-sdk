@@ -17,9 +17,9 @@ what runs on real silicon versus what we simulate.
 > boots the real kernel + real userspace on `-M virt` — check-in/OTA against the
 > mock portal, watchdog, RS485-to-sim bridge, 720x720 display + touch, all
 > emulation-verified) are in. What remains before this is on the production build
-> path: qemu-system-arm on the kernel-build runner (see `docs/ci-cd.md` §5) and
-> having flare-edge consume warden-sdk as a dependency — both [maintainer]-gated. Until
-> then, flare-edge still builds firmware from the vendored SDK + `sdk-patches/`.
+> path: having flare-edge consume warden-sdk as a dependency (maintainer-gated).
+> Until then, flare-edge still builds firmware from the vendored SDK +
+> `sdk-patches/`.
 
 ## Why a new SDK
 
