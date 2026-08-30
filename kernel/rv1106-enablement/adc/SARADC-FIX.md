@@ -1,4 +1,4 @@
-# SARADC — ✅ VERIFIED on warden-c8a3 (2026-08-25); the -22 was vref, not clk
+# SARADC — VERIFIED on warden-c8a3 (2026-08-25); the -22 was vref, not clk
 
 The rockchip_saradc probe failed `-22` NOT at clk_set_rate (no "failed to set
 adc clk rate" ever printed) but at `regulator_get_voltage(info->vref)` — with no

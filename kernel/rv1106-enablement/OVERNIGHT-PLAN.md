@@ -1,6 +1,6 @@
 # Overnight autonomous kernel-completion workflow
 
-**Directive ([maintainer], 2026-08-24 night):** port/enable **every** remaining RV1106
+**Directive (2026-08-24 night):** port/enable **every** remaining RV1106
 hardware capability on the self-built 6.18 kernel, **open-source-first** — we want
 *source* we can read, harden, and bend to our needs (vendor SDK source, upstream,
 community repos, or reverse-engineering), never binary blobs. Not just ports —

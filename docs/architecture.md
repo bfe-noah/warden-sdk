@@ -65,13 +65,15 @@ supervisor logic runs in CI with no panel.
   the boot-mode register's survives-warm-reset / cleared-by-POR behaviour (the MaskRom
   recovery maneuver). The matching firmware-side `Bus` seam on flared's `devmem` — so
   the shipped ladder can be asserted to poke the confirmed offset, never the wrong-SoC
-  one — lands when flare-edge consumes warden-sdk (§7 item 3, [maintainer]-gated), not yet on
+  one — lands when flare-edge consumes warden-sdk (§8 item 3, maintainer-gated), not yet on
   flare-edge `main`.
 - **`modbus` — RS-485 device end.** Done. `ModbusSlave`: a byte-in/byte-out RTU slave
   (CRC16 byte-identical to the master, FC 0x01–0x06/0x0F/0x10/0x11, exception replies,
   and fault injection — silent-drop and forced-NAK) so `warden-modbus`'s master can be
   hardened to MC/DC against realistic device behaviour with no serial hardware. MEI
-  (0x2B/0x0E) identification is the documented follow-up.
+  (0x2B/0x0E) identification is the documented follow-up. The same slave also serves
+  as the QEMU device sim's field bus: `qemu/rs485-bridge/` feeds it from a serial
+  chardev so the guest's real master polls it over what it believes is /dev/ttyS4 (§7).
 - **`npu` — NPU load model.** Done. `NpuSim` models `/proc/rknpu/load` (the exact
   "NPU load:  N%" text the sysmon reads) behind the path seam, so the load-readout UI
   is host-testable. NPU *compute* is explicitly out of scope — no inference runs here.
@@ -86,7 +88,7 @@ supervisor logic runs in CI with no panel.
 Integration with flare-edge: flared implements `MemBus` for `/dev/mem` and gains
 `#[cfg(test)]` tests driving its real arm/beat logic against `HpmcuSim`. This needs
 warden-sdk reachable as a Cargo dependency in CI — i.e. a remote for this repo,
-which is a **[maintainer]-go-ahead item** (credential/remote creation). Until then the
+which is a **maintainer go-ahead item** (credential/remote creation). Until then the
 firmware-side seam and a local test double land in flare-edge, unified with `sim/`
 once the dependency exists. No duplication of *logic* — only the tiny trait.
 
@@ -152,14 +154,41 @@ kernel move as one matched boot+oem image, never a partial reflash.
 series honest against pristine 6.18.46; provenance is in `patches/README.md` and
 `kernel/rv1106-enablement/`.
 
-## 7. Order of work
+## 7. Device emulation (`qemu/`) — see ADR-0006
+
+The third simulator, deliberately not named "sim": a QEMU VM (`-M virt,highmem=off`,
+one Cortex-A7, 256M — the RV1106G3's shape) that boots the real forward-ported
+kernel and real userspace, entering at `-kernel zImage` because everything below
+(BootROM, idblock/DDR-init, U-Boot, the BCB A/B machinery) is closed blobs plus
+mask ROM. The canonical RV1106 zImage boots virt unmodified; an additive kconfig
+fragment (`qemu/configs/virt.fragment` via `WARDEN_KCONFIG_FRAGMENT`) adds the
+scenario devices (PCI serial for RS485, i6300esb watchdog, WireGuard,
+virtio-gpu/input for the 720x720 UI). The virtio disk carries the device's exact
+12-partition `blkdevparts=` A/B layout and the `/dev/block/by-name/` contract.
+
+Where the seams meet: the guest runs the *real* binaries (static musl flared,
+the LVGL fbdev UI); the RS485 bridge (`qemu/rs485-bridge/`) connects a QEMU
+serial chardev to `sim/`'s `ModbusSlave`, so the register-level models serve as
+the VM's field bus — behavior lives in one place, `sim/`, and the VM consumes
+it. Scenario tests: `qemu/tests/boot-smoke.sh` (CI, in kernel-build),
+`portal-scenario.sh` (check-in + OTA offer download against flare-edge's mock
+portal), `ui-shot.sh` (QMP screendump + touch injection). Division of labour
+with the other sims: NPU/RGA/HPMCU *behavior* stays `sim/`; UI *rendering
+development* stays `lvglsim`; the VM is where processes, the kernel, and the
+network meet. §5 still applies — no behavioural sim, this one included, catches
+memory-map faults; and "boots under emulation" is never on-silicon evidence.
+
+## 8. Order of work
 
 1. **Simulator core** — `membus`, `hpmcu`, the `cru` reset ladder, `modbus`, plus the
    `rga`/`npu` models. **Done.**
 2. **C-driver MC/DC harnesses** — `relays.c` and `freshness.c` at 100% MC/DC, CI-gated
    via the shared `drivers/enforce-mcdc.sh`. **Done** (the first C coverage gate).
 3. **flared devmem/hpmcu seam + tests** — firmware-side trait, unified with `sim/`
-   once flare-edge consumes warden-sdk (a separate, [maintainer]-gated step). **Pending.**
+   once flare-edge consumes warden-sdk (a separate, maintainer-gated step). **Pending.**
 4. **Config-lint CI gates** (§5) — the brick-class of bug. **Done.**
 5. **Hermetic kernel build** (`build/build-kernel.sh` + the `patches-apply` gate). **Done.**
 6. **Kernel 5.10→6.18.46 forward-port** (§6, ADR-0001). **Done** (hardware-verified).
+7. **QEMU device sim** (§7, ADR-0006) — boot smoke, A/B disk harness, RS485 bridge,
+   portal/watchdog/clock scenarios, display+touch. **Done** (emulation-verified;
+   booting the real flare-edge rootfs+oem image pair is a documented later milestone).

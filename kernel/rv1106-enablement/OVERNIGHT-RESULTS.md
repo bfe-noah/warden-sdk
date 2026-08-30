@@ -1,13 +1,13 @@
 # Overnight kernel-enablement run — results (2026-08-24 night → 08-25)
 
-Goal ([maintainer]): port/enable **every** remaining RV1106 hardware capability on the
+Goal: port/enable **every** remaining RV1106 hardware capability on the
 self-built Linux 6.18.46, open-source-first, verify on hardware, so the display's
 last mile can start in the morning. Runs on warden-c8a3 (`_b` slot = our 6.18).
 
-## ✅ Verified on hardware this run
+## Verified on hardware this run
 | Driver | Evidence |
 |---|---|
-| **AIC8800 wifi** (M5) | wlan0 up ([device-mac]), `iw scan` found the site AP −43 dBm + others. Modules (built-in deadlocks the two-stage SDIO bring-up). |
+| **AIC8800 wifi** (M5) | wlan0 up, `iw scan` found the site AP at −43 dBm + others. Modules (built-in deadlocks the two-stage SDIO bring-up). |
 | **TRNG** | `/dev/hwrng`, `rng_current=rockchip-rng`, real entropy. |
 | **OTP/nvmem** | `rockchip-otp0` reads chip id ("MR1"). |
 | **GMAC** (wired eth) | `eth0: Link is Up - 100 Mbps/Full`. |
@@ -33,7 +33,7 @@ mailbox (binds via rk3368 fallback but no client to exercise), crypto-v3 (CPU
 crypto extensions already cover it; 100 KB port), NPU (no open userspace),
 pvtm (DVFS-only). Camera/ISP/SPI: no hardware. **No unexplored capability gap.**
 
-## Morning (needs [maintainer] at the bench)
+## Morning (needs a human at the bench)
 1. **Display connector** — VOP binds + DRM card0 + panel probes, but no connector
    link yet; needs eyes on the panel (pixels can't be verified over serial).
 2. **Audible audio** — `speaker-test`/`aplay` through the acodec.

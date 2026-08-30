@@ -331,6 +331,6 @@ the value of checking the decoded string, not just the ioctl return code.
 
 ## Also updated this session
 
-`../DRIVER-PARITY.md`'s NPU row: `⬜ M6 — plan: npu/PORT-PLAN.md` -> `🔨 M6 built,
+`../DRIVER-PARITY.md`'s NPU row: `[ ] M6 — plan: npu/PORT-PLAN.md` -> `[wip] M6 built,
 0 errors/0 warnings, 99 rknpu-prefixed symbols in System.map, &npu
 {status="okay"} in the dtb — not yet flashed/probed on hardware`.

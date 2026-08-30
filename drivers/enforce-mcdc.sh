@@ -52,5 +52,5 @@ if ! echo "$cond_line" | grep -q "100.00%"; then
 	rc=1
 fi
 
-[ "$rc" = "0" ] && echo "RESULT: 100% MC/DC + all checks green ✓"
+[ "$rc" = "0" ] && echo "RESULT: 100% MC/DC + all checks green OK"
 exit "$rc"

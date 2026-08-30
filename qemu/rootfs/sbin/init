@@ -1,0 +1,96 @@
+#!/bin/busybox sh
+# shellcheck shell=dash
+# Stage-2 init: PID 1 on the disk rootfs (rootfs_a or rootfs_b), reached via
+# switch_root from the initramfs. Brings up the minimum a WardenOS userspace
+# needs — mounts, by-name symlinks, network, serial alias — then starts any
+# payload daemons and holds. This stands in for the device's BusyBox SysV
+# /etc/init.d/S* sequence; it is deliberately tiny, not a model of it.
+
+/bin/busybox mount -t devtmpfs devtmpfs /dev 2>/dev/null
+exec </dev/console >/dev/console 2>&1
+/bin/busybox --install -s /bin
+
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t tmpfs tmpfs /tmp
+
+# shellcheck source=qemu/rootfs/etc/warden-lib.sh disable=SC1091
+. /etc/warden-lib.sh
+
+# Fresh devtmpfs — repopulate the by-name contract; same VALIDATED slot rule
+# as stage 1 (shared helper, so the two can never drift).
+warden_populate_by_name
+slot="$(warden_slot)"
+
+# The device's matched mounts: persistent state and the slot's oem partition.
+# Fail-fast: a scenario against an image whose userdata cannot mount would
+# otherwise burn its whole deadline before failing generically. warden.shell
+# still gets a shell for post-mortem.
+mount_fatal() {
+    if ! mount -t ext4 "/dev/block/by-name/$1" "$2"; then
+        echo "WARDEN-QEMU-MOUNT-FAILED $1"
+        if grep -qw warden.shell /proc/cmdline; then
+            echo "warden.shell: post-mortem shell (exit powers off)"
+            setsid cttyhack sh
+        fi
+        poweroff -f
+    fi
+}
+mount_fatal userdata /userdata
+mount_fatal "oem${slot}" /oem
+mkdir -p /userdata/warden
+
+# RS485: warden-modbus hardcodes /dev/ttyS4 at compile time; alias it to the
+# VM's pci-serial UART when one is present (needs the virt.fragment kernel).
+[ -c /dev/ttyS0 ] && ln -sf /dev/ttyS0 /dev/ttyS4
+
+# Network: slirp user-mode net on eth0 (DHCP, fallback to QEMU's static map).
+# The fallback keys off the interface actually having an address — udhcpc
+# exiting 0 only proves a lease, not that the hook script applied it.
+ip link set lo up
+if [ -e /sys/class/net/eth0 ]; then
+    ip link set eth0 up
+    udhcpc -i eth0 -n -q -t 5 -T 2 >/dev/null 2>&1 || true
+    if ! ip -4 addr show dev eth0 | grep -q 'inet '; then
+        ip addr add 10.0.2.15/24 dev eth0 2>/dev/null
+        ip route replace default via 10.0.2.2 dev eth0
+        echo "nameserver 10.0.2.3" > /etc/resolv.conf
+    fi
+fi
+
+hostname warden-qemu
+
+echo "WARDEN-QEMU-ROOTFS-OK slot=${slot}"
+
+# Payload daemons (dropped into /usr/bin by qemu/mkimage.sh from qemu/payload/).
+# WARDEN_FLARE_INSECURE=1: the VM's portal is the desk mock over plain HTTP.
+# This is a dev instrument — a production device build never sets it.
+export WARDEN_FLARE_INSECURE=1
+# No HPMCU on -M virt: the mailbox SRAM (0xff6fff00) is unmapped bus space
+# here, and flared's /dev/mem poke dies with an external abort (SIGBUS). The
+# SCR1 supervisor state machine is modeled in sim/src/hpmcu.rs instead.
+export WARDEN_HPMCU=0
+for d in /usr/bin/warden-flared /usr/bin/warden-modbus; do
+    if [ -x "$d" ]; then
+        name="$(basename "$d")"
+        echo "init: starting $name"
+        "$d" > "/tmp/${name}.log" 2>&1 &
+    fi
+done
+
+# The UI (LVGL fbdev+evdev build from flare-edge tools/build-ui-vm.sh) needs
+# virtio-gpu's fbdev: present only with run.sh --display on|headless AND the
+# virt.fragment kernel.
+if [ -x /usr/bin/warden-ui ] && [ -c /dev/fb0 ]; then
+    echo "init: starting warden-ui (fbdev)"
+    /usr/bin/warden-ui > /tmp/warden-ui.log 2>&1 &
+fi
+
+if grep -qw warden.shell /proc/cmdline; then
+    echo "warden.shell: interactive shell (exit powers off)"
+    setsid cttyhack sh
+    poweroff -f
+fi
+
+# Hold: daemons run, console idles, scenarios drive the VM from outside.
+while :; do sleep 3600; done

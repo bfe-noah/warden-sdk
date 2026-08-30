@@ -10,10 +10,10 @@ live RF scan.
   `Start app: 00120000`, BSP_RC=0.
 - `insmod aic8800_fdrv.ko` → `ieee80211 phy0: HT supp 1, VHT supp 1, HE supp 1`,
   FDRV_RC=0.
-- `wlan0: <BROADCAST,MULTICAST,UP,LOWER_UP> ... link/ether [device-mac]`
-- `iw dev wlan0 scan` found real APs:
-  - **the site AP  [bssid]  2412 MHz  −43 dBm**
-  - a neighboring guest AP  [bssid]  2412 MHz  −73 dBm
+- `wlan0: <BROADCAST,MULTICAST,UP,LOWER_UP> ... link/ether <device MAC>`
+- `iw dev wlan0 scan` found real APs (SSIDs/BSSIDs redacted for publication):
+  - **the site AP at 2412 MHz, −43 dBm**
+  - a neighboring guest AP at 2412 MHz, −73 dBm
   - +several more, correct signal strengths → RF path fully functional.
 
 ## Why MODULES, not built-in (=y)

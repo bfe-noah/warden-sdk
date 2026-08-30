@@ -1,4 +1,4 @@
-# PVTM (Process-Voltage-Temperature Monitor) — ✅ VERIFIED on warden-c8a3 (2026-08-25)
+# PVTM (Process-Voltage-Temperature Monitor) — VERIFIED on warden-c8a3 (2026-08-25)
 
 Whole-driver port: mainline 6.18 has **no** rockchip pvtm driver; the vendor
 `drivers/soc/rockchip/rockchip_pvtm.c` (GPL-2.0, 1046L) supports rv1106. Copied it in

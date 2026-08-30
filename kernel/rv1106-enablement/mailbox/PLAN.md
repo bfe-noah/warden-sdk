@@ -25,7 +25,7 @@ watchdog exactly as-is (different threat model, different job).
 - **Controller (Linux side): non-issue.** `drivers/mailbox/rockchip-mailbox.c` is
   upstream in mainline 6.18 and **already binds on our exact kernel** via the
   generic `rockchip,rk3368-mailbox` **fallback compatible** with **zero patching**
-  — recorded in `CAPABILITIES-AUDIT.md:30`, confirmed by source read. RV1106's DT
+  — recorded in `CAPABILITIES-AUDIT.md`'s Remaining-blocks table (mailbox row), confirmed by source read. RV1106's DT
   declares both instances with that fallback string. Gated today only by
   `status="disabled"` + `CONFIG_ROCKCHIP_MBOX` being absent from the defconfig.
 - **HPMCU firmware (MCU side): we already do the hard part.** WardenOS has a
@@ -241,7 +241,7 @@ adopt rpmsg/virtio unless the payload complexity genuinely demands it.
   moot, since our `hpmcu.rs` is an independent hardware-validated reimplementation.
 
 ---
-_Cross-refs: `../CAPABILITIES-AUDIT.md:30`, `../REMAINING-PORTS.md §7`,
+_Cross-refs: `../CAPABILITIES-AUDIT.md`, `../REMAINING-PORTS.md §7`,
 `../../luckfox-pico-86-panel/riscv-mcu.md`,
 `.../raw/followup-riscv-mcu.md`,
 `flare-edge/major-app-additions/docs/decisions/0002-hpmcu-watchdog.md`,

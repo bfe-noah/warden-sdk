@@ -1,4 +1,4 @@
-# HPMCU mailbox — ✅ 100% VERIFIED on warden-c8a3 (2026-08-25)
+# HPMCU mailbox — [x] 100% VERIFIED on warden-c8a3 (2026-08-25)
 
 A fully-open A7 ↔ HPMCU (RISC-V SCR1) hardware-mailbox round-trip on our self-built
 Linux 6.18.46. Open kernel driver + open SCR1 firmware, **zero blobs**.
@@ -7,11 +7,11 @@ Linux 6.18.46. Open kernel driver + open SCR1 firmware, **zero blobs**.
 SCR1 echo firmware running: `DBG_STATE = 0x584F424D` ("MBOX"). Five round-trips,
 Linux → mailbox → SCR1 → mailbox → Linux, **all exact**:
 ```
-sent 0x0000beef/0x600df00d -> B2A 0x0000BEEF/0x600DF00D  e=4  ✓
-sent 0x0000c0de/0x12345678 -> B2A 0x0000C0DE/0x12345678  e=5  ✓
-sent 0x0000face/0xdeadbeef -> B2A 0x0000FACE/0xDEADBEEF  e=6  ✓
-sent 0x00001234/0xcafef00d -> B2A 0x00001234/0xCAFEF00D  e=7  ✓
-sent 0x0000aa55/0x55aa55aa -> B2A 0x0000AA55/0x55AA55AA  e=8  ✓
+sent 0x0000beef/0x600df00d -> B2A 0x0000BEEF/0x600DF00D  e=4  OK
+sent 0x0000c0de/0x12345678 -> B2A 0x0000C0DE/0x12345678  e=5  OK
+sent 0x0000face/0xdeadbeef -> B2A 0x0000FACE/0xDEADBEEF  e=6  OK
+sent 0x00001234/0xcafef00d -> B2A 0x00001234/0xCAFEF00D  e=7  OK
+sent 0x0000aa55/0x55aa55aa -> B2A 0x0000AA55/0x55AA55AA  e=8  OK
 ```
 Echo counter increments 1:1 with sends; both CMD and DAT echo back verbatim.
 

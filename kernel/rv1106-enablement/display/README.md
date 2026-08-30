@@ -39,7 +39,7 @@ rockchip-drm display-subsystem: bound ff990000.vop
 brightness settable). **The VOP driver port is validated** — the register data,
 version, feature, and resets are right.
 
-## ✅ RESOLVED — full UI renders on the panel (2026-08-25)
+## RESOLVED — full UI renders on the panel (2026-08-25)
 
 The connector *and* the deeper black-screen chain that followed it are fixed; the
 86-Panel now draws the full WardenOS Dashboard on 6.18 (`_b`), verified by webcam.

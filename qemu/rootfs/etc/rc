@@ -1,0 +1,43 @@
+#!/bin/busybox sh
+# shellcheck shell=dash
+# Stage-1 rc: sourced by /init (still PID 1, initramfs root) when a virtio
+# disk is present. Emulates U-Boot's slot choice — mount the validated slot's
+# rootfs and switch_root into it. This is an EMULATION of the A/B selection
+# outcome, not the BCB/bootcount mechanism itself.
+#
+# Every guarded failure path `return`s to /init (valid in a sourced script;
+# /init then falls through to shell/poweroff). The final exec is the one
+# unguardable step: if switch_root itself fails to launch, the shell — PID 1 —
+# exits and the kernel panics; the applet-existence check below catches the
+# only preventable variant of that.
+
+# shellcheck source=qemu/rootfs/etc/warden-lib.sh disable=SC1091
+. /etc/warden-lib.sh
+
+warden_populate_by_name
+slot="$(warden_slot)"
+
+root="/dev/block/by-name/rootfs${slot}"
+if [ ! -e "$root" ]; then
+    echo "rc: $root missing — staying in initramfs"
+    return 0
+fi
+
+mkdir -p /mnt
+if ! mount -t ext4 "$root" /mnt; then
+    echo "rc: mount of $root failed — staying in initramfs"
+    return 0
+fi
+if [ ! -x /mnt/sbin/init ]; then
+    echo "rc: $root has no /sbin/init — staying in initramfs"
+    umount /mnt
+    return 0
+fi
+if ! command -v switch_root >/dev/null; then
+    echo "rc: busybox lacks switch_root — staying in initramfs"
+    umount /mnt
+    return 0
+fi
+
+echo "rc: switching root to rootfs${slot} ($root)"
+exec switch_root /mnt /sbin/init

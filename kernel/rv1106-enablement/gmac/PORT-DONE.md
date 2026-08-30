@@ -1,4 +1,4 @@
-# GMAC (wired 10/100 ethernet) — ✅ VERIFIED on warden-c8a3 (2026-08-25)
+# GMAC (wired 10/100 ethernet) — VERIFIED on warden-c8a3 (2026-08-25)
 
 **Result: `eth0: Link is Up - 100Mbps/Full - flow control rx/tx`** on our
 self-built 6.18.46. The 86-Panel's RMII MAC + on-die 10/100 FEPHY works; a real

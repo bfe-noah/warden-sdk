@@ -12,12 +12,14 @@ the rest of the firmware: tested, benchmarked, reproducible, and honest about
 what runs on real silicon versus what we simulate.
 
 > Status: **bringup.** The hardware **simulator** and its tests, the RV1106 kernel
-> forward-port as a reviewable `patches/` series, the hermetic kernel build, and two
-> Tier-1 drivers at 100% MC/DC are all in and CI-green on `main`. What
-> remains before this is on the production build path: installing the self-hosted
-> kernel-build runner (see `docs/ci-cd.md`) and having flare-edge consume warden-sdk
-> as a dependency — both [maintainer]-gated. Until then, flare-edge still builds firmware from
-> the vendored SDK + `sdk-patches/`.
+> forward-port as a reviewable `patches/` series, the hermetic kernel build, two
+> Tier-1 drivers at 100% MC/DC, and the **QEMU device sim** (`qemu/`, ADR-0006:
+> boots the real kernel + real userspace on `-M virt` — check-in/OTA against the
+> mock portal, watchdog, RS485-to-sim bridge, 720x720 display + touch, all
+> emulation-verified) are in. What remains before this is on the production build
+> path: having flare-edge consume warden-sdk as a dependency (maintainer-gated).
+> Until then, flare-edge still builds firmware from the vendored SDK +
+> `sdk-patches/`.
 
 ## Why a new SDK
 
@@ -90,6 +92,8 @@ than duplicate each other.
 
 ```
 sim/        the hardware simulator (Rust): membus/devmem, HPMCU, CRU, Modbus, RGA, NPU.
+qemu/       the device simulator (ADR-0006): QEMU -M virt boots the real kernel and
+            real userspace; A/B disk layout, RS485 bridge into sim/, scenario tests.
 drivers/    our own hardened drivers + their seams (relays, freshness; more migrate in).
 patches/    the RV1106 kernel forward-port delta onto pristine linux-6.18.46 (subsystem-split).
 kernel/     forward-port docs + provenance (rv1106-enablement/, PROVENANCE.md).
@@ -117,6 +121,17 @@ Evaluated against the stack philosophy — **openness, hardness, modernness**:
 ## Relationship to flare-edge
 
 flare-edge (WardenOS: the LVGL UI + the `flared` daemon) is the product; warden-sdk
-is what builds and tests it. During bootstrap, flare-edge consumes warden-sdk piece
+is what builds and tests it. flare-edge is BlueFlare's private companion repo —
+not publicly available — so flare-edge issue references and checkout paths in
+this repo's docs are context, not reachable links. During bootstrap, flare-edge consumes warden-sdk piece
 by piece: first the simulator (as a dev/test dependency), later the image build.
 No flare-edge code moves here — only the SDK/build/sim/driver-seam layer.
+
+## License
+
+**GPL-2.0-only**, repo-wide (see `LICENSE`; a per-file SPDX identifier governs
+where one is present, e.g. a few GPL-2.0-or-later kernel files). The kernel
+material in `patches/` and `kernel/rv1106-enablement/` is derivative of the
+Linux kernel and of GPL-2.0 vendor code either way — per-driver origin and
+license are tracked in `kernel/rv1106-enablement/PROVENANCE.md`. Contributions
+are accepted under the same license (inbound = outbound).

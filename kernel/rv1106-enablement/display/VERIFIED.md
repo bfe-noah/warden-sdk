@@ -1,4 +1,4 @@
-# Display (VOP + RGB panel) — ✅ VERIFIED on warden-c8a3 (2026-08-25)
+# Display (VOP + RGB panel) — VERIFIED on warden-c8a3 (2026-08-25)
 
 The 86-Panel renders the **full WardenOS Dashboard UI** on our self-built Linux
 6.18.46 (`_b` slot), pixel-identical to the stock 5.10 `_a` slot. Verified by

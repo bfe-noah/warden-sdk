@@ -7,9 +7,10 @@ findings — they worked on the first hardware try.**
 
 ## The safe test path (A/B slot _b, never touch _a)
 
-c8a3 is the XPS-connected Warden: eth0 `[bench-ip]` over USB-gadget ([bench-creds],
-dropbear — use `scp -O`, no sftp-server), plus the serial console on xps
-`/dev/ttyUSB2` @115200 and Zigbee power (`plug_cmd.py cycle`). It runs an A/B
+c8a3 is the desk-connected bench Warden: reachable over its USB-gadget ethernet
+(dev-build dropbear; address and bench credentials live in the private
+deployment notes — use `scp -O`, no sftp-server), plus the serial console at
+115200 and remotely switchable power. It runs an A/B
 firmware (boot_a=mmcblk0p5 / boot_b=mmcblk0p6, 32 MiB each; rootfs_a/_b; AvbABData
 in `misc` sector 4 / byte 2048).
 
@@ -51,7 +52,7 @@ With the correct format, U-Boot loaded my kernel + my DTB and printed my DT mode
 string (`Model: WardenOS 86-Panel (RV1106) — M2 earlycon bring-up`), then
 `Starting kernel ...`.
 
-## Result: ✅ M2 achieved — the 6.18 kernel boots on hardware
+## Result: [x] M2 achieved — the 6.18 kernel boots on hardware
 
 Six attempts, each auto-recovering to `_a`, then a clean boot:
 
@@ -84,7 +85,7 @@ pre-MMU), then fixed:
 CP2102 bench adapter — so the M2 DT pins 115200 for readable bring-up; production
 overrides to 1.5M.
 
-## M3 (same session): ✅ the full WardenOS runs on the 6.18 kernel
+## M3 (same session): [x] the full WardenOS runs on the 6.18 kernel
 
 Adding the eMMC `dw_mmc` node (`mmc@ffa90000`, clocks from cru + grf_cru) was the
 only change M3 needed — the mmc/ext4 drivers are already in-config. The kernel
@@ -96,7 +97,8 @@ won't load (vermagic → M5), and there's no backlight/framebuffer yet (→ M4).
 
 **Console lesson applied:** with `console=ttyS2,115200` the whole boot is readable
 on the CP2102 (the 1.5M vendor rate is garbage on it). Serial login uses the same
-`c8a3_run.py` [bench-creds] helper as the 5.10 firmware — the userspace is unchanged.
+`c8a3_run.py` helper (dev-build bench credentials, see private deployment notes)
+as the 5.10 firmware — the userspace is unchanged.
 
 Next: M4 (VOP2 display + panel + touch), M5 (AIC8800 SDIO port + our 4 patches),
 M6 (RGA/watchdog/HPMCU/USB-OTG); plus a lean defconfig + Buildroot-on-6.18 cleanup.

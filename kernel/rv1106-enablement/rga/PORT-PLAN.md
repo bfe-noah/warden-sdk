@@ -284,7 +284,7 @@ implied by this kernel port.
    reports true (`querystring(RGA_VERSION)` succeeds — `warden_rga.c:458-466`) and the
    Monitor page's "RGA" load metric moves during graph scroll (`warden_rga_load_pct()`,
    `warden_rga.c:226-241`) — the same on-target evidence bar as every other change in
-   this repo (`../../CLAUDE.md`: "UI/daemon changes are verified on a real panel").
+   this repo (repo policy: "UI/daemon changes are verified on a real panel").
 
 ## Summary of residual risk (PORT-VERIFY-class items)
 
@@ -294,8 +294,9 @@ implied by this kernel port.
 - **CMA pool sizing** — 10 MiB was sized against the 5.10 image's actual usage (graph
   canvas + scanout mirror at 720×720×4B ≈ 2 MiB each); carry the same size unless a
   future accounting shows it's tight.
-- **Driver-parity table** (`../DRIVER-PARITY.md`) should move `RGA 2D (rga2)` from ⬜ to
-  🔨/✅ as these steps land, same convention as every other M-milestone row.
+- **Driver-parity table** (`../DRIVER-PARITY.md`) should move `RGA 2D (rga2)` from [ ] to
+  [wip]/[x] as these steps land, same convention as every other M-milestone row
+(the parity row already reads [x]).
 
 ## Sources
 

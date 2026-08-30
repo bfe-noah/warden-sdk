@@ -197,7 +197,8 @@ the whole problem.
 
 `PROVENANCE.md`: the kernel driver is portable GPL; the closed piece is the
 userspace RKNN runtime + regcmd format (a blob). **Per directive we do not ship
-that blob.** `CAPABILITIES-AUDIT.md:32` rates NPU "not worth shipping" until an
+that blob.** `CAPABILITIES-AUDIT.md`'s Remaining-blocks table rates the NPU
+"open driver VERIFIED; compute deferred" until an
 open encoder exists.
 
 ### URLs
@@ -299,5 +300,5 @@ ever begun; otherwise this is the documented reason open NPU compute is deferred
 
 ---
 _Cross-refs: `PORT-PLAN.md` (authoritative file-by-file kernel port),
-`../../docs/npu-graphics-feasibility.md`, `../CAPABILITIES-AUDIT.md:32`,
+`../../docs/npu-graphics-feasibility.md`, `../CAPABILITIES-AUDIT.md`,
 `../PROVENANCE.md`, `../DRIVER-PARITY.md:41`, `../REMAINING-PORTS.md §6`._

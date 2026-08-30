@@ -1,4 +1,4 @@
-# NPU (rknpu) open kernel driver — ✅ VERIFIED on warden-c8a3 (2026-08-25)
+# NPU (rknpu) open kernel driver — VERIFIED on warden-c8a3 (2026-08-25)
 
 The open GPL rknpu kernel driver runs on our self-built Linux 6.18.46. This is the
 achievable open end state (Tier A in `OPEN-NPU-PLAN.md`); open *compute* remains a
