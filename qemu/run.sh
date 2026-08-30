@@ -78,6 +78,9 @@ fi
 APPEND="console=ttyAMA0 rdinit=/init"
 ARGS=(
   -M "virt,highmem=off" -cpu cortex-a7 -smp 1 -m 256M
+  # virtio-mmio defaults to the legacy (0.9) transport; virtio-gpu and
+  # virtio-input are VERSION_1-only devices and never bind without this.
+  -global "virtio-mmio.force-legacy=false"
   -kernel "$KERNEL" -initrd "$INITRD"
   -netdev "user,id=n0,hostfwd=tcp:127.0.0.1:${SSH_PORT}-:22,hostfwd=tcp:127.0.0.1:${HTTP_PORT}-:80,hostfwd=tcp:127.0.0.1:${API_PORT}-:28443"
   -device "virtio-net-device,netdev=n0"

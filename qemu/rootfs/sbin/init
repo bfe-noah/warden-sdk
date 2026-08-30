@@ -77,6 +77,14 @@ for d in /usr/bin/warden-flared /usr/bin/warden-modbus; do
     fi
 done
 
+# The UI (LVGL fbdev+evdev build from flare-edge tools/build-ui-vm.sh) needs
+# virtio-gpu's fbdev: present only with run.sh --display on|headless AND the
+# virt.fragment kernel.
+if [ -x /usr/bin/warden-ui ] && [ -c /dev/fb0 ]; then
+    echo "init: starting warden-ui (fbdev)"
+    /usr/bin/warden-ui > /tmp/warden-ui.log 2>&1 &
+fi
+
 if grep -qw warden.shell /proc/cmdline; then
     echo "warden.shell: interactive shell (exit powers off)"
     setsid cttyhack sh

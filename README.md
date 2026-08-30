@@ -12,12 +12,14 @@ the rest of the firmware: tested, benchmarked, reproducible, and honest about
 what runs on real silicon versus what we simulate.
 
 > Status: **bringup.** The hardware **simulator** and its tests, the RV1106 kernel
-> forward-port as a reviewable `patches/` series, the hermetic kernel build, and two
-> Tier-1 drivers at 100% MC/DC are all in and CI-green on `main`. What
-> remains before this is on the production build path: installing the self-hosted
-> kernel-build runner (see `docs/ci-cd.md`) and having flare-edge consume warden-sdk
-> as a dependency — both [maintainer]-gated. Until then, flare-edge still builds firmware from
-> the vendored SDK + `sdk-patches/`.
+> forward-port as a reviewable `patches/` series, the hermetic kernel build, two
+> Tier-1 drivers at 100% MC/DC, and the **QEMU device sim** (`qemu/`, ADR-0006:
+> boots the real kernel + real userspace on `-M virt` — check-in/OTA against the
+> mock portal, watchdog, RS485-to-sim bridge, 720x720 display + touch, all
+> emulation-verified) are in. What remains before this is on the production build
+> path: qemu-system-arm on the kernel-build runner (see `docs/ci-cd.md` §5) and
+> having flare-edge consume warden-sdk as a dependency — both [maintainer]-gated. Until
+> then, flare-edge still builds firmware from the vendored SDK + `sdk-patches/`.
 
 ## Why a new SDK
 
@@ -90,6 +92,8 @@ than duplicate each other.
 
 ```
 sim/        the hardware simulator (Rust): membus/devmem, HPMCU, CRU, Modbus, RGA, NPU.
+qemu/       the device simulator (ADR-0006): QEMU -M virt boots the real kernel and
+            real userspace; A/B disk layout, RS485 bridge into sim/, scenario tests.
 drivers/    our own hardened drivers + their seams (relays, freshness; more migrate in).
 patches/    the RV1106 kernel forward-port delta onto pristine linux-6.18.46 (subsystem-split).
 kernel/     forward-port docs + provenance (rv1106-enablement/, PROVENANCE.md).

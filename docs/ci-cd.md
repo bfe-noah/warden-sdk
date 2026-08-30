@@ -45,6 +45,14 @@ A **third** repo-scoped runner instance on `bfe-mpc-0640` (alongside `flare` and
 
 Host build deps: `dtc bc flex bison libssl-dev` — already present on 0640.
 
+5. **`qemu-system-arm`** (for the boot-smoke step inside `kernel-build`, added
+   with the `qemu/` device sim — ADR-0006): one-time
+   `sudo apt-get install qemu-system-arm cpio` on 0640. The step is
+   **fail-closed** — a missing qemu binary fails the job with a message
+   pointing here; it never silently skips. NOT YET PROVISIONED (2026-08-29):
+   the first dispatched `kernel-build` after this lands will fail its smoke
+   step until the install is done ([maintainer]-gated sudo on 0640).
+
 ## Badges
 
 Static shields SVGs are committed by the `badges` job (private repo can't use
