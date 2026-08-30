@@ -1,6 +1,6 @@
 # RV1106 → Linux 6.18 forward-port (self-built, from vendor 5.10)
 
-**Decision ([maintainer], 2026-08-23):** forward-port the RV1106 SoC enablement from the
+**Decision (2026-08-23):** forward-port the RV1106 SoC enablement from the
 Rockchip **vendor 5.10** tree straight to **Linux 6.18 LTS**, ourselves, using **no
 plan44 code**, built on **our Buildroot 2025.02 LTS + uClibc**. We own the tree.
 

@@ -1,6 +1,6 @@
 # Driver provenance & openness ledger
 
-[maintainer]'s directive: **every** driver we run on the self-built 6.18 kernel must be
+Standing directive: **every** driver we run on the self-built 6.18 kernel must be
 open source we can read, harden, and bend — not a binary blob — and this applies
 to the drivers *already* ported, not just the new ones. This ledger records, for
 each, where the source came from and under what license. Every entry is GPL-2.0

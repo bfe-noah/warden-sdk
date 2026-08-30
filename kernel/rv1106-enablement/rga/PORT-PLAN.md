@@ -284,7 +284,7 @@ implied by this kernel port.
    reports true (`querystring(RGA_VERSION)` succeeds — `warden_rga.c:458-466`) and the
    Monitor page's "RGA" load metric moves during graph scroll (`warden_rga_load_pct()`,
    `warden_rga.c:226-241`) — the same on-target evidence bar as every other change in
-   this repo (`../../CLAUDE.md`: "UI/daemon changes are verified on a real panel").
+   this repo (repo policy: "UI/daemon changes are verified on a real panel").
 
 ## Summary of residual risk (PORT-VERIFY-class items)
 

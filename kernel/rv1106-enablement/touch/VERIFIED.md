@@ -1,7 +1,7 @@
 # GT911 capacitive touch — VERIFIED on warden-c8a3 (2026-08-25)
 
 Touch works on our self-built 6.18.46 (`_b`): the WardenOS UI responds to
-taps/swipes ([maintainer] confirmed on the physical panel). Objective evidence:
+taps/swipes (confirmed by hand on the physical panel). Objective evidence:
 
 ```
 Goodix-TS 3-0014: ID 911, version: 1060

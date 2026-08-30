@@ -24,7 +24,7 @@ scanout window (rv1106 uses **WIN1**, not rv1126's WIN2). Full chain + `_a`-vs-`
 register diff in `display/VERIFIED.md`.
 
 ## GT911 touch — VERIFIED this run (2026-08-25)
-UI responds to taps/swipes on the panel ([maintainer]-confirmed); GT911 detected
+UI responds to taps/swipes on the panel (confirmed by hand at the panel); GT911 detected
 (`ID 911, version 1060`), `/dev/input/event0` held by warden-ui. Fix:
 `CONFIG_TOUCHSCREEN_GOODIX=y` (built-in — the rootfs `goodix.ko` is a 5.10 build
 that can't load on 6.18) + GT911 node on `&i2c3`. Details in `touch/VERIFIED.md`.
