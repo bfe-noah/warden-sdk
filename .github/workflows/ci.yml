@@ -35,7 +35,7 @@ jobs:
         run: |
           set -o pipefail
           : > /tmp/test.log
-          for d in sim tools/config-lint qemu/rs485-bridge; do
+          for d in sim tools/config-lint qemu/rs485-bridge qemu/tests/clockprobe; do
             echo "== cargo test in $d ==" | tee -a /tmp/test.log
             ( cd "$d" && cargo test --locked ) 2>&1 | tee -a /tmp/test.log
           done
