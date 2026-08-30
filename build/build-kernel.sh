@@ -12,6 +12,9 @@
 #   SDK_TC           dir holding the arm-rockchip830 uclibc cross toolchain bin/
 #   WORK             build scratch dir (default: a mktemp under $TMPDIR)
 #   JOBS             parallel make jobs (default: nproc)
+#   WARDEN_KCONFIG_FRAGMENT
+#                    optional kconfig fragment merged onto warden_defconfig
+#                    (qemu/configs/virt.fragment builds the QEMU -M virt variant)
 #
 # Requires: `python` (not python3) on PATH — the SDK quirk; the CI runner provides
 # a project-local venv. Builds are SERIAL on the shared SDK box — never run two.
@@ -97,6 +100,19 @@ log "patch series applied ($(basename "$SENTINEL") present)"
 # 4. configure
 log "configuring (warden_defconfig)"
 cp "$HERE/warden_defconfig" "$SRC/.config"
+# Optional kconfig fragment overlay (e.g. qemu/configs/virt.fragment for the
+# QEMU -M virt device-sim variant). Fail closed if set but unreadable — never
+# silently build the wrong kernel. Unset => the canonical RV1106 build,
+# byte-identical to a build without this hook.
+if [ -n "${WARDEN_KCONFIG_FRAGMENT:-}" ]; then
+  [ -f "$WARDEN_KCONFIG_FRAGMENT" ] || {
+    echo "FATAL: WARDEN_KCONFIG_FRAGMENT set but not a file: $WARDEN_KCONFIG_FRAGMENT" >&2
+    exit 1
+  }
+  FRAG="$(cd "$(dirname "$WARDEN_KCONFIG_FRAGMENT")" && pwd)/$(basename "$WARDEN_KCONFIG_FRAGMENT")"
+  log "merging kconfig fragment $(basename "$FRAG")"
+  ( cd "$SRC" && ARCH=arm ./scripts/kconfig/merge_config.sh -m .config "$FRAG" )
+fi
 # CROSS_COMPILE defaults to the Luckfox SDK uclibc prefix (set SDK_TC to its bin/),
 # but the kernel is freestanding, so a caller may override with a generic arm cross
 # toolchain instead — e.g. CROSS_COMPILE=arm-linux-gnueabihf- (in Debian's

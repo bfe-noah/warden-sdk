@@ -1,0 +1,18 @@
+#!/bin/busybox sh
+# Minimal udhcpc hook for the VM (busybox looks here by default).
+[ -n "$1" ] || exit 1
+case "$1" in
+    deconfig)
+        ip addr flush dev "$interface"
+        ip link set "$interface" up
+        ;;
+    bound|renew)
+        ip addr replace "$ip/${mask:-24}" dev "$interface"
+        [ -n "${router:-}" ] && ip route replace default via "${router%% *}" dev "$interface"
+        if [ -n "${dns:-}" ]; then
+            : > /etc/resolv.conf
+            for d in $dns; do echo "nameserver $d" >> /etc/resolv.conf; done
+        fi
+        ;;
+esac
+exit 0

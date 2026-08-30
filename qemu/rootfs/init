@@ -1,0 +1,32 @@
+#!/bin/busybox sh
+# WardenOS QEMU device sim: initramfs /init (PID 1).
+#
+# Phase-1 duty: prove the kernel booted on -M virt — print the sentinel the
+# smoke test greps for, then power off (PSCI SYSTEM_OFF, so qemu exits).
+# `warden.shell` on the kernel cmdline drops to an interactive shell instead.
+
+/bin/busybox mount -t devtmpfs devtmpfs /dev 2>/dev/null
+
+# The cpio archive carries no device nodes (it is built unprivileged, no
+# mknod); reopen stdio on the real console now that devtmpfs is mounted.
+exec </dev/console >/dev/console 2>&1
+
+/bin/busybox --install -s /bin
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+
+echo "WARDEN-QEMU-BOOT-OK"
+
+# With a virtio disk attached, hand over to the stage-1 rc (by-name symlinks,
+# slot select, switch_root). It only returns on failure — then fall through to
+# the diskless shell/poweroff behavior below.
+if [ -b /dev/vda ]; then
+    . /etc/rc
+fi
+
+if grep -qw warden.shell /proc/cmdline; then
+    echo "warden.shell: interactive shell (exit to power off)"
+    setsid cttyhack sh
+fi
+
+poweroff -f

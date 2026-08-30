@@ -19,3 +19,9 @@ __pycache__/
 
 # driver MC/DC harness build dirs
 **/test/build/
+
+# qemu device sim: build outputs (initramfs, disk images, cached busybox) and
+# payload binaries (dropped in from flare-edge builds, never committed)
+qemu/out/
+qemu/payload/*
+!qemu/payload/README.md

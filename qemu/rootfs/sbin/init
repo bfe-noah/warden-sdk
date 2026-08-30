@@ -1,0 +1,80 @@
+#!/bin/busybox sh
+# Stage-2 init: PID 1 on the disk rootfs (rootfs_a or rootfs_b), reached via
+# switch_root from the initramfs. Brings up the minimum a WardenOS userspace
+# needs — mounts, by-name symlinks, network, serial alias — then starts any
+# payload daemons and holds. This stands in for the device's BusyBox SysV
+# /etc/init.d/S* sequence; it is deliberately tiny, not a model of it.
+
+/bin/busybox mount -t devtmpfs devtmpfs /dev 2>/dev/null
+exec </dev/console >/dev/console 2>&1
+/bin/busybox --install -s /bin
+
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t tmpfs tmpfs /tmp
+
+# Fresh devtmpfs — repopulate the by-name contract (slotctl.rs depends on it).
+mkdir -p /dev/block/by-name
+for uev in /sys/class/block/vda*/uevent; do
+    [ -f "$uev" ] || continue
+    partname=""
+    devname=""
+    while IFS='=' read -r k v; do
+        case "$k" in
+            PARTNAME) partname="$v" ;;
+            DEVNAME)  devname="$v" ;;
+        esac
+    done < "$uev"
+    [ -n "$partname" ] && [ -n "$devname" ] \
+        && ln -sf "/dev/$devname" "/dev/block/by-name/$partname"
+done
+
+# Slot (whole-token parse, same rule as stage 1).
+slot="_a"
+for tok in $(cat /proc/cmdline); do
+    case "$tok" in
+        warden.slot=*) slot="${tok#warden.slot=}" ;;
+    esac
+done
+
+# The device's matched mounts: persistent state and the slot's oem partition.
+mount -t ext4 /dev/block/by-name/userdata /userdata || echo "init: userdata mount failed"
+mount -t ext4 "/dev/block/by-name/oem${slot}" /oem || echo "init: oem${slot} mount failed"
+mkdir -p /userdata/warden
+
+# RS485: warden-modbus hardcodes /dev/ttyS4 at compile time; alias it to the
+# VM's pci-serial UART when one is present (needs the virt.fragment kernel).
+[ -c /dev/ttyS0 ] && ln -sf /dev/ttyS0 /dev/ttyS4
+
+# Network: slirp user-mode net on eth0 (DHCP, fallback to QEMU's static map).
+ip link set lo up
+if [ -e /sys/class/net/eth0 ]; then
+    ip link set eth0 up
+    if ! udhcpc -i eth0 -n -q -t 5 -T 2 >/dev/null 2>&1; then
+        ip addr add 10.0.2.15/24 dev eth0 2>/dev/null
+        ip route replace default via 10.0.2.2 dev eth0
+        echo "nameserver 10.0.2.3" > /etc/resolv.conf
+    fi
+fi
+
+hostname warden-qemu
+
+echo "WARDEN-QEMU-ROOTFS-OK slot=${slot}"
+
+# Payload daemons (dropped into /usr/bin by qemu/mkimage.sh from qemu/payload/).
+for d in /usr/bin/warden-flared /usr/bin/warden-modbus; do
+    if [ -x "$d" ]; then
+        name="$(basename "$d")"
+        echo "init: starting $name"
+        "$d" > "/tmp/${name}.log" 2>&1 &
+    fi
+done
+
+if grep -qw warden.shell /proc/cmdline; then
+    echo "warden.shell: interactive shell (exit powers off)"
+    setsid cttyhack sh
+    poweroff -f
+fi
+
+# Hold: daemons run, console idles, scenarios drive the VM from outside.
+while :; do sleep 3600; done

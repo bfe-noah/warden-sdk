@@ -1,0 +1,36 @@
+# QEMU -M virt kernel variant — merged onto build/warden_defconfig via
+# WARDEN_KCONFIG_FRAGMENT (see build/build-kernel.sh). The RV1106 zImage stays
+# canonical and byte-identical when the variable is unset.
+#
+# The canonical zImage already BOOTS on -M virt as-is (verified 2026-08-29:
+# the multi_v7 heritage supplies ARCH_VIRT + the virtio set, and DEBUG_LL's
+# hardcoded RV1106 UART is inert as long as `earlyprintk` is never passed on
+# the cmdline). This fragment therefore only ADDS what the device-sim
+# scenarios need beyond the canonical config.
+
+# -M virt exposes exactly one PL011 (probed: QEMU 10 dtb has a single
+# pl011@9000000); every additional device below rides the machine's PCIe
+# (ECAM "host generic") root.
+CONFIG_PCI=y
+CONFIG_PCI_HOST_GENERIC=y
+
+# Second UART for the RS485/Modbus bridge: -device pci-serial (16550-class,
+# shows up as ttyS0; stage-2 init aliases it to the device's /dev/ttyS4).
+CONFIG_SERIAL_8250_PCI=y
+
+# /dev/watchdog for flared's watchdog_loop() — untestable on both existing
+# sims. i6300esb is the watchdog QEMU offers on arm virt (PCI device):
+# -device i6300esb -action watchdog=reset.
+CONFIG_WATCHDOG=y
+CONFIG_I6300ESB_WDT=y
+
+# wg0 mesh scenarios (flared owns identity, the panel shells out `wg`).
+CONFIG_WIREGUARD=y
+
+# Display + touch: virtio-gpu scanout with fbdev emulation (the VM UI build
+# uses LVGL's fbdev backend — no libdrm needed in the guest), virtio-tablet
+# for absolute-coordinate touch injection via QMP.
+CONFIG_FB=y
+CONFIG_DRM_VIRTIO_GPU=y
+CONFIG_DRM_FBDEV_EMULATION=y
+CONFIG_VIRTIO_INPUT=y
