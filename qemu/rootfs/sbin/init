@@ -1,4 +1,5 @@
 #!/bin/busybox sh
+# shellcheck shell=dash
 # Stage-2 init: PID 1 on the disk rootfs (rootfs_a or rootfs_b), reached via
 # switch_root from the initramfs. Brings up the minimum a WardenOS userspace
 # needs — mounts, by-name symlinks, network, serial alias — then starts any

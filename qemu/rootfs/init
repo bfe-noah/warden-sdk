@@ -1,4 +1,5 @@
 #!/bin/busybox sh
+# shellcheck shell=dash
 # WardenOS QEMU device sim: initramfs /init (PID 1).
 #
 # Phase-1 duty: prove the kernel booted on -M virt — print the sentinel the

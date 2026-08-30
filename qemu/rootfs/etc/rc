@@ -1,4 +1,5 @@
 #!/bin/busybox sh
+# shellcheck shell=dash
 # Stage-1 rc: sourced by /init (still PID 1, initramfs root) when a virtio
 # disk is present. Emulates U-Boot's slot choice — mount the validated slot's
 # rootfs and switch_root into it. This is an EMULATION of the A/B selection
