@@ -10,7 +10,8 @@ no CI, tests, or versioning of their own. The SDK requirement (future-features-2
 §SDK) calls for "its own repo, held to firmware standards."
 
 ## Decision
-A **private** `bfe-noah/warden-sdk` GitHub repo, standalone from day one with its own
+A **private** `warden-sdk` GitHub repo (now `blueflare-energy/warden-sdk` and public
+per ADR-0007), standalone from day one with its own
 CI/versioning. Work lands on a `bringup` branch; the first commit to `main` is gated
 on a passing review run, green CI, and the maintainer's fresh explicit go-ahead.
 

@@ -1,6 +1,6 @@
 # warden-sdk
 
-[![ci](https://github.com/bfe-noah/warden-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/bfe-noah/warden-sdk/actions/workflows/ci.yml)
+[![ci](https://github.com/blueflare-energy/warden-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/blueflare-energy/warden-sdk/actions/workflows/ci.yml)
 ![Lines of code](.github/badges/loc.svg)
 ![Tests](.github/badges/tests.svg)
 ![Coverage](.github/badges/coverage.svg)
