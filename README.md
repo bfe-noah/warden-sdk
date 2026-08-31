@@ -6,42 +6,24 @@
 ![Coverage](.github/badges/coverage.svg)
 
 A modern, open development environment for the **Luckfox Pico 86 Panel**
-(Rockchip RV1106): a current Linux kernel as a reviewable patch series, a
-hermetic build, a QEMU device simulator, register-level hardware models, and
-MC/DC-hardened drivers (Modified Condition/Decision Coverage — the
-avionics-grade test bar). It replaces the vendor stack — a ~2 GB, twice-forked
-SDK pinned to Linux 5.10 — and is honest about what runs on real silicon
-versus what is simulated. Born as the SDK for WardenOS (BlueFlare Energy's
-wall-panel firmware); nothing here requires it.
+(Rockchip RV1106), replacing the vendor SDK — and honest about what runs on
+real silicon versus what is simulated.
 
-## Why
-
-The vendor SDK:
-
-- bakes in absolute paths and silently drops Kconfig options;
-- offers no way to test hardware-dependent code off the device — every change
-  means flashing a panel;
-- let a memory-map mistake brick a bench unit (a coprocessor load address in
-  unreserved kernel RAM) that a static check would have caught —
-  `tools/config-lint` is now that check.
-
-This SDK makes the board buildable, testable, and hardenable **without a
-panel in the loop**, on a maintained kernel.
-
-## What Works
-
-A self-built **Linux 6.18.46**, forward-ported from vendor 5.10.160 as a
-subsystem-split patch series (`patches/`) and hardware-verified on a bench
-panel: clk, pinctrl, eMMC, GMAC, TRNG, OTP, SARADC/TSADC, RTC, USB host,
-PWM/backlight, VOP display, GT911 touch, AIC8800 wifi, RGA, I2S audio, the
-HPMCU (RISC-V watchdog coprocessor) mailbox, the open NPU driver, and PVTM.
-Mainline alone was not viable for RV1106 (ADR-0001).
+| | Vendor SDK | This repo |
+|---|---|---|
+| **Kernel** | 5.10.160, twice-forked, frozen | **6.18.46** — a reviewable, subsystem-split patch series onto pristine upstream; full peripheral set (display, touch, wifi, audio, NPU, ...) hardware-verified on a bench panel |
+| **Build** | ~2 GB tree, absolute paths baked in, Kconfig options silently dropped | one hermetic script: sha256-pinned source fetch, fail-closed patch apply and config fragments |
+| **Off-device testing** | none — every change means flashing a panel | register-level hardware models (`sim/`) plus a QEMU device VM booting the real kernel, real daemons, and the real UI with display + touch |
+| **Config safety** | memory-map mistakes reach hardware (one bricked a bench unit) | static gates (`tools/config-lint`) catch them before any flash |
+| **CI** | none | hosted pipeline: tests, coverage, benchmarks, patch-apply gate, kernel build with an in-CI QEMU boot smoke |
+| **Flashing tools** | closed (`upgrade_tool`) | open (`rkdeveloptool`) |
+| **License** | mixed | **GPL-2.0-only**, with a per-driver provenance ledger |
 
 ## Quick Start
 
 Requirements: `gcc-arm-linux-gnueabihf`, `qemu-system-arm`, `curl`, `cpio`,
 `mkfs.ext4`, a bare `python` on PATH (Debian/Ubuntu: `python-is-python3`),
-gcc >= 14 (for the MC/DC gate), and Rust (for the simulators' tests).
+gcc >= 14 (driver harnesses), and Rust (for the simulators' tests).
 
 ```sh
 # 1. Build the kernel: fetch pinned pristine 6.18.46, apply patches/, emit
@@ -57,7 +39,7 @@ bash qemu/run.sh --kernel $HOME/kbuild-out/linux-6.18.46/arch/arm/boot/zImage --
 for d in sim tools/config-lint qemu/rs485-bridge; do
   (cd "$d" && cargo test)
 done
-for d in drivers/*/test; do make -C "$d" check; done  # 100% MC/DC gate (gcc >= 14)
+for d in drivers/*/test; do make -C "$d" check; done  # driver harnesses (gcc >= 14)
 ```
 
 Add `WARDEN_KCONFIG_FRAGMENT=qemu/configs/virt.fragment` to step 1 for the
@@ -72,7 +54,7 @@ scenario tests (portal, OTA apply, display + touch, watchdog).
 | `build/` | hermetic kernel build: pinned fetch → apply patches → `zImage` + dtb |
 | `qemu/` | device simulator: QEMU `-M virt` boots the real kernel and real userspace |
 | `sim/` | register-level hardware models (Rust): membus, HPMCU, CRU, Modbus, RGA, NPU |
-| `drivers/` | hardened hardware-facing drivers: HAL seams, 100% MC/DC harnesses |
+| `drivers/` | hardened hardware-facing drivers: HAL seams, test harnesses |
 | `kernel/` | forward-port provenance and bring-up records (`patches/` is canonical) |
 | `tools/` | `config-lint` (static memory-map gates) and dev tooling |
 | `docs/` | architecture, ADRs (`decisions/`), CI/CD |
@@ -81,9 +63,9 @@ scenario tests (portal, OTA apply, display + touch, watchdog).
 
 One thin **hardware abstraction seam** per block (a trait in Rust, a function
 table in C): firmware logic talks to the seam; the seam binds a real backend
-on the device or a simulated backend on the host. MC/DC is measured against
-the same seam the simulator implements, so the two reinforce each other.
-Full detail: `docs/architecture.md`.
+on the device or a simulated backend on the host. The driver test harnesses
+measure against the same seam the simulator implements, so the two reinforce
+each other. Full detail: `docs/architecture.md`.
 
 | Simulator | Runs | Proves |
 |---|---|---|
@@ -106,10 +88,10 @@ the simulators narrow which claims need a panel.
 
 ## Downstream
 
-WardenOS (the 86 Panel firmware this SDK was born for) consumes this repo
-from its private repo, flare-edge; issue references and checkout paths
-pointing there are context, not reachable links. The QEMU simulator runs its
-production binaries unmodified — real over-the-air updates included.
+A private firmware repo (flare-edge) consumes this SDK; issue references and
+checkout paths pointing there are engineering context, not reachable links.
+The QEMU simulator runs its production binaries unmodified — real
+over-the-air updates included.
 
 ## License
 
