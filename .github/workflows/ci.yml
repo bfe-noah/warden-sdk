@@ -257,8 +257,71 @@ jobs:
           # active bound, this is the backstop.
           retention-days: 5
 
+  quality:
+    # Self-hosted Codacy-style grade: a linter battery feeds
+    # tools/quality/score.py (SQALE debt ratio + a separate security axis;
+    # thresholds documented in the script). No external assessment service;
+    # the badge is rendered and committed by the badges job.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      grade: ${{ steps.score.outputs.grade }}
+      color: ${{ steps.score.outputs.color }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: install analyzers
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq cppcheck shellcheck
+          pip install --quiet lizard ruff
+          sudo npm install --silent -g jscpd
+          curl -fsSL -o /tmp/scc.tar.gz \
+            https://github.com/boyter/scc/releases/download/v3.6.0/scc_Linux_x86_64.tar.gz
+          sudo tar -C /usr/local/bin -xzf /tmp/scc.tar.gz scc
+          rustup component add clippy
+      - uses: taiki-e/install-action@b6ff580856c41316412a0b9b60540fbc6f8c82cc # v2.86.7
+        with:
+          tool: cargo-audit
+      - name: collect linter outputs
+        run: |
+          Q="$RUNNER_TEMP/qual"; mkdir -p "$Q"
+          scc --format json \
+            --exclude-dir .git,target,patches,kernel,docs/workflows,.github/badges \
+            . > "$Q/scc.json"
+          : > "$Q/clippy.jsonl"
+          for d in sim tools/config-lint qemu/rs485-bridge qemu/tests/clockprobe; do
+            ( cd "$d" && cargo clippy --locked --all-targets --message-format=json \
+                2>/dev/null >> "$Q/clippy.jsonl" )
+            ( cd "$d" && cargo audit --json -q > "$Q/audit-$(basename "$d").json" )
+          done
+          shellcheck -f json1 qemu/*.sh qemu/tests/*.sh build/*.sh \
+            qemu/rootfs/init qemu/rootfs/etc/rc qemu/rootfs/sbin/init \
+            > "$Q/shellcheck.json" || true
+          cppcheck --enable=warning,style,performance,portability --inline-suppr \
+            --xml drivers/ 2> "$Q/cppcheck.xml"
+          lizard -C 10 --csv sim/src qemu/rs485-bridge/src tools/config-lint/src \
+            drivers/ tools/flowgen.py qemu/tests/clockprobe/src > "$Q/lizard.csv"
+          ruff check --output-format=json tools/ qemu/ > "$Q/ruff.json" || true
+          jscpd --silent --reporters json --output "$Q" \
+            --pattern '**/*.{rs,c,h,sh,py}' \
+            --ignore '**/target/**,**/patches/**,**/kernel/**' .
+      - name: score
+        id: score
+        run: |
+          python3 tools/quality/score.py "$RUNNER_TEMP/qual" \
+            --out "$RUNNER_TEMP/qual/quality.json"
+          J="$RUNNER_TEMP/qual/quality.json"
+          echo "grade=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['grade'])" "$J")" >> "$GITHUB_OUTPUT"
+          echo "color=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['badge_color'])" "$J")" >> "$GITHUB_OUTPUT"
+      - name: security gate
+        run: python3 tools/quality/score.py "$RUNNER_TEMP/qual" --gate-security C
+      - uses: actions/upload-artifact@v4
+        with:
+          name: quality-report
+          path: ${{ runner.temp }}/qual/quality.json
+          retention-days: 30
+
   badges:
-    needs: [test]
+    needs: [test, quality]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -266,26 +329,37 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: install cloc
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq cloc
+      - name: install tools
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq cloc
+          pip install --quiet anybadge
       - name: render badges
+        # Rendered locally with anybadge: the committed SVG must not depend
+        # on any external service, at view time or at render time.
         env:
           PASSED: ${{ needs.test.outputs.passed }}
           COVERAGE: ${{ needs.test.outputs.coverage }}
+          GRADE: ${{ needs.quality.outputs.grade }}
+          QCOLOR: ${{ needs.quality.outputs.color }}
         run: |
           mkdir -p .github/badges
           loc=$(cloc --quiet --json --exclude-dir=target,build,build-target,patches,data,docs . \
                 | python3 -c 'import sys,json; print(json.load(sys.stdin)["SUM"]["code"])')
-          col=orange; [ "${COVERAGE:-0}" -ge 60 ] && col=yellow; [ "${COVERAGE:-0}" -ge 80 ] && col=brightgreen
-          curl -fsSL "https://img.shields.io/badge/lines%20of%20code-${loc}-blue" -o .github/badges/loc.svg
-          curl -fsSL "https://img.shields.io/badge/tests-${PASSED}%20passing-brightgreen" -o .github/badges/tests.svg
-          curl -fsSL "https://img.shields.io/badge/coverage-${COVERAGE}%25-${col}" -o .github/badges/coverage.svg
+          col='#fe7d37'; [ "${COVERAGE:-0}" -ge 60 ] && col='#dfb317'; [ "${COVERAGE:-0}" -ge 80 ] && col='#4c1'
+          anybadge --overwrite --label="lines of code" --value="$loc" --color='#007ec6' \
+            --file=.github/badges/loc.svg
+          anybadge --overwrite --label=tests --value="${PASSED} passing" --color='#4c1' \
+            --file=.github/badges/tests.svg
+          anybadge --overwrite --label=coverage --value="${COVERAGE}%" --color="$col" \
+            --file=.github/badges/coverage.svg
+          anybadge --overwrite --label="code quality" --value="$GRADE" --color="$QCOLOR" \
+            --file=.github/badges/quality.svg
       - name: commit badges
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .github/badges/loc.svg .github/badges/tests.svg .github/badges/coverage.svg
+          git add .github/badges/*.svg
           if ! git diff --cached --quiet; then
-            git commit -m "ci: update loc/tests/coverage badges [skip ci]"
+            git commit -m "ci: update badges [skip ci]"
             git push
           fi

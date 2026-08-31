@@ -4,6 +4,7 @@
 ![Lines of code](.github/badges/loc.svg)
 ![Tests](.github/badges/tests.svg)
 ![Coverage](.github/badges/coverage.svg)
+![Code quality](.github/badges/quality.svg)
 
 A modern, open development environment for the **Luckfox Pico 86 Panel**
 (Rockchip RV1106), replacing the vendor SDK, and honest about what runs on
