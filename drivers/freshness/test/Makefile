@@ -1,7 +1,7 @@
 # MC/DC unit harness for drivers/freshness/freshness.c (the UI stale-number guard).
 #
-#   make check   — build, run, FAIL unless freshness.c hits 100% MC/DC + all checks.
-#   make report  — per-condition gcov annotation.
+#   make check   : build, run, FAIL unless freshness.c hits 100% MC/DC + all checks.
+#   make report  : per-condition gcov annotation.
 #   make clean
 #
 # FRESH_MAX is forced to 2 so the "binding table full -> NULL" path is reachable

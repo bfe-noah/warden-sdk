@@ -9,7 +9,7 @@ qemu_log() { printf '\033[36m== %s\033[0m\n' "$*"; }
 
 # Fetch (or accept via $BUSYBOX) the pinned static armv7 busybox and verify it
 # against qemu/busybox.sha256. FAILS CLOSED: a missing pin refuses to build,
-# never silently skips verification — mirroring build/build-kernel.sh's
+# never silently skips verification, mirroring build/build-kernel.sh's
 # tarball handling. Sets $BB to the verified binary's path.
 qemu_get_busybox() {
   local sha_file="$QEMU_DIR/busybox.sha256"
@@ -19,7 +19,7 @@ qemu_get_busybox() {
   # Pin first: a missing pin refuses BEFORE downloading, same ordering as
   # build/fetch-kernel-tarball.sh.
   [ -f "$sha_file" ] || {
-    echo "FATAL: no pinned sha256 for busybox (expected $sha_file) — refusing to build from an unverified binary" >&2
+    echo "FATAL: no pinned sha256 for busybox (expected $sha_file): refusing to build from an unverified binary" >&2
     exit 1
   }
   if [ ! -f "$BB" ]; then

@@ -3,7 +3,7 @@
 //! control listener.
 //!
 //! Typical use (matches qemu/run.sh --rs485). Put the sockets in a private
-//! per-run directory (mktemp -d) — short (AF_UNIX caps paths at ~108 chars)
+//! per-run directory (mktemp -d): short (AF_UNIX caps paths at ~108 chars)
 //! and not guessable/pre-creatable by other local users, unlike a fixed
 //! /tmp name:
 //!
@@ -40,7 +40,7 @@ fn main() {
                 eprintln!("{name} needs a value");
                 usage()
             });
-            // A following flag means the value was omitted — report the real
+            // A following flag means the value was omitted. Report the real
             // problem instead of swallowing the flag as a bogus value.
             if v.starts_with("--") {
                 eprintln!("{name} needs a value, got flag '{v}'");
@@ -70,7 +70,7 @@ fn main() {
     if let Some(path) = control {
         // Clear a stale socket from a previous run. A failure here that is not
         // "nothing to remove" (e.g. someone else's file behind /tmp's sticky
-        // bit) will make the bind below fail — surface both errors.
+        // bit) will make the bind below fail. Surface both errors.
         let removed = std::fs::remove_file(&path);
         let listener = UnixListener::bind(&path).unwrap_or_else(|e| {
             eprintln!("FATAL: cannot bind control socket {path}: {e}");
@@ -89,7 +89,7 @@ fn main() {
                 let conn = match conn {
                     Ok(c) => c,
                     Err(e) => {
-                        eprintln!("rs485: control accept failed: {e} — backing off");
+                        eprintln!("rs485: control accept failed: {e}, backing off");
                         std::thread::sleep(Duration::from_millis(200));
                         continue;
                     }

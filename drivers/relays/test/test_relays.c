@@ -1,10 +1,10 @@
 /* MC/DC harness for drivers/relays/relays.c.
  *
  * Two layers, one binary, so the combined run covers every decision in relays.c:
- *   1. unit tests through a FAKE relay_io — exercise the decision logic, incl.
+ *   1. unit tests through a FAKE relay_io: exercise the decision logic, incl.
  *      the export->node-appears path a passive tree cannot model.
  *   2. integration tests through the real sysfs backend + $WARDEN_GPIO_ROOT
- *      pointed at a scratch tree — exercise the backend's fopen/stat branches.
+ *      pointed at a scratch tree: exercise the backend's fopen/stat branches.
  */
 #include "../relays.h"
 

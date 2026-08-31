@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Build the VM's virtio disk image carrying the device's canonical 12-partition
-# A/B layout (qemu/blkdevparts.conf — the same string U-Boot and Linux parse on
+# A/B layout (qemu/blkdevparts.conf: the same string U-Boot and Linux parse on
 # hardware; there is no MBR/GPT). Every partition is placed at the exact offset
 # the cmdline string declares; rootfs_a/rootfs_b/oem_a/oem_b/userdata get ext4,
 # the boot-chain partitions (env/idblock/uboot/misc/boot_a/boot_b/recovery)
-# stay zeroed — the VM enters at -kernel and never reads them.
+# stay zeroed: the VM enters at -kernel and never reads them.
 #
 # Built entirely UNPRIVILEGED: per-partition mkfs.ext4 -d (no loop mounts, no
 # sudo), then dd'd into a sparse raw image.
@@ -72,7 +72,7 @@ for p in "$QEMU_DIR"/payload/*; do
   install -m 0755 "$p" "$ROOT/usr/bin/$(basename "$p")"
 done
 
-# Firmware version stamp — same path the device build writes; flared reads its
+# Firmware version stamp: same path the device build writes; flared reads its
 # running version here (downgrade rules key off it).
 printf '%s\n' "$FW_VERSION" > "$ROOT/etc/warden-firmware-version"
 
@@ -144,7 +144,7 @@ place_partition() {
     *) echo "FATAL: unknown partition name '$name' in blkdevparts.conf" >&2; exit 1 ;;
   esac
   DISK_END_TRACK "$off" "$size"
-  # dd in 4K blocks — every offset in the canonical layout is 4K-aligned;
+  # dd in 4K blocks: every offset in the canonical layout is 4K-aligned;
   # assert rather than assume, a misaligned write would corrupt a neighbor.
   if [ $((off % 4096)) -ne 0 ] || [ $((size % 4096)) -ne 0 ]; then
     echo "FATAL: partition $name not 4K-aligned (off=$off size=$size)" >&2

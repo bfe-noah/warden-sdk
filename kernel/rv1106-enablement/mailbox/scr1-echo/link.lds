@@ -1,5 +1,5 @@
 /*
- * HPMCU watchdog supervisor — linked into the hpmcu_sram carve-out.
+ * HPMCU watchdog supervisor: linked into the hpmcu_sram carve-out.
  *
  * The RV1106's 256K on-chip SRAM at 0xFF6C0000 is split by the kernel DT
  * (rv1106.dtsi sram@ff6c0000) into rkisp_sram (0x0..0x3e000) and hpmcu_sram

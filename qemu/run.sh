@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Launch the WardenOS device VM (qemu-system-arm -M virt, single Cortex-A7,
-# 256M — the RV1106G3's shape). See qemu/README.md for what this does and does
+# 256M: the RV1106G3's shape). See qemu/README.md for what this does and does
 # not emulate.
 #
 # Usage: run.sh --kernel <zImage> [options] [-- <extra qemu args>]
@@ -10,7 +10,7 @@
 #                      when present; pass --no-disk for a diskless initramfs boot)
 #   --no-disk          boot without a disk (initramfs shell/smoke behavior)
 #   --slot _a|_b       rootfs slot to boot (default _a)
-#   --rtc DATE         guest RTC base, e.g. 2021-01-01 — reproduces the no-RTC
+#   --rtc DATE         guest RTC base, e.g. 2021-01-01: reproduces the no-RTC
 #                      "device boots believing 2021" incident class
 #   --rs485 SOCK       unix socket chardev for the RS485/Modbus bridge
 #                      (pci-serial: needs the virt.fragment kernel)
@@ -23,7 +23,7 @@
 #   --api-port N       hostfwd 127.0.0.1:N -> guest :28443 (default 28443; 0 disables)
 #   --shell            interactive shell in the guest instead of daemon hold
 #   --allow-apply      let flared ACTUALLY apply OTA firmware (writes rootfs_b
-#                      inside disk.img — safe in the VM, never the default)
+#                      inside disk.img, safe in the VM, never the default)
 set -euo pipefail
 
 QEMU_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -63,7 +63,7 @@ if [ -z "$KERNEL" ] || [ ! -f "$KERNEL" ]; then
   exit 1
 fi
 [ -f "$INITRD" ] || {
-  echo "FATAL: initramfs not found at $INITRD — run qemu/mkinitramfs.sh" >&2
+  echo "FATAL: initramfs not found at $INITRD: run qemu/mkinitramfs.sh" >&2
   exit 1
 }
 case "$SLOT" in _a|_b) ;; *) echo "FATAL: --slot must be _a or _b" >&2; exit 1 ;; esac
@@ -72,14 +72,14 @@ if [ "$NO_DISK" -eq 0 ] && [ -z "$DISK" ] && [ -f "$OUT/disk.img" ]; then
   DISK="$OUT/disk.img"
 fi
 if [ -n "$DISK" ] && [ ! -f "$DISK" ]; then
-  echo "FATAL: disk image $DISK not found — run qemu/mkimage.sh (or pass --no-disk)" >&2
+  echo "FATAL: disk image $DISK not found: run qemu/mkimage.sh (or pass --no-disk)" >&2
   exit 1
 fi
 
-# NOTE: never add `earlyprintk` — the config's DEBUG_UART_PHYS is the RV1106's
+# NOTE: never add `earlyprintk`: the config's DEBUG_UART_PHYS is the RV1106's
 # 0xff4c0000, which does not exist on -M virt.
 APPEND="console=ttyAMA0 rdinit=/init"
-# Port 0 disables a forward — a boot smoke needs no host ports and must not
+# Port 0 disables a forward. A boot smoke needs no host ports and must not
 # fail on a busy default port.
 NETDEV="user,id=n0"
 [ "$SSH_PORT" != 0 ]  && NETDEV="$NETDEV,hostfwd=tcp:127.0.0.1:${SSH_PORT}-:22"

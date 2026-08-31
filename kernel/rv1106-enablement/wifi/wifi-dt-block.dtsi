@@ -20,7 +20,7 @@
 	status = "okay";
 };
 
-/* --- M5: AIC8800DC wifi/BT SDIO (on &sdmmc, mmc@ffaa0000 — NOT &sdio) --- */
+/* --- M5: AIC8800DC wifi/BT SDIO (on &sdmmc, mmc@ffaa0000, NOT &sdio) --- */
 &sdmmc {
 	max-frequency = <50000000>;
 	bus-width = <4>;

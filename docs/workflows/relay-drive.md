@@ -2,7 +2,7 @@
 
 > **Outcome tested:** A relay is exported transparently and driven without disturbing a held contact.
 
-**Coverage**: relays.c — 40/40 conditions, 100% MC/DC (CI-enforced)
+**Coverage**: relays.c: 40/40 conditions, 100% MC/DC (CI-enforced)
 
 ```mermaid
 flowchart TD

@@ -6,8 +6,8 @@ patch applies cleanly onto pristine 6.18.46 (`git apply --check`), and the whole
 reproduces the 223-file / ~136K-line delta that boots and is hardware-verified on
 `warden-c8a3` (see `../kernel/rv1106-enablement/`).
 
-Build it with `../build/build-kernel.sh` (fetch pristine → apply these → configure
-with `../build/warden_defconfig` → `zImage` + `rv1106-warden.dtb`).
+Build it with `../build/build-kernel.sh` (fetch pristine -> apply these -> configure
+with `../build/warden_defconfig` -> `zImage` + `rv1106-warden.dtb`).
 
 ## The Series
 
@@ -43,4 +43,4 @@ subsystem. Licensing/origin of each block is tracked in
 
 Whitespace: `60-wifi-aic8800.patch` carries the vendor blob's trailing-whitespace
 verbatim; `git apply --whitespace=nowarn` (the build wrapper) accepts it. Do not
-re-flow vendor code — it must stay diffable against future vendor drops.
+re-flow vendor code; it must stay diffable against future vendor drops.

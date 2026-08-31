@@ -9,7 +9,7 @@
  * RKNPU_GET_HW_VERSION, and prints the decoded results. This exercises the
  * full ioctl-dispatch -> power-get/put -> clock/reset path with zero
  * dependency on a regcmd buffer or the (closed) RKNN runtime -- see
- * OPEN-NPU-PLAN.md §1.4 Tier A and PORT-PLAN.md §3 step 5.
+ * OPEN-NPU-PLAN.md section 1.4 Tier A and PORT-PLAN.md section 3 step 5.
  *
  * Dependency-free beyond the UAPI header: build with
  *   -I<kernel-tree>/include/uapi
@@ -41,7 +41,7 @@
  * value read directly off the NPU core's VERSION/VERSION_NUM registers
  * (rknpu_job.c:rknpu_get_hw_version()) -- any non-zero, non-0xffffffff
  * value is a plausible "the register block is alive" signal; there is no
- * published decode table for it beyond that (PORT-PLAN.md §3 step 5).
+ * published decode table for it beyond that (PORT-PLAN.md section 3 step 5).
  */
 
 #include <errno.h>

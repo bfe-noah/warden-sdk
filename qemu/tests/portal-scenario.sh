@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # End-to-end device scenario: the REAL warden-flared, running inside the VM,
 # checks in to flare-edge's mock FLARE portal on the host and pulls its
-# firmware desired-state — the exact device-initiated HTTPS(-shaped) flow a
+# firmware desired-state: the exact device-initiated HTTPS(-shaped) flow a
 # panel performs, with zero flare-edge code changes (the portal URL is a state
 # file; 10.0.2.2 is slirp's host alias).
 #
-# FAILS CLOSED on every missing prerequisite — never a soft skip.
+# FAILS CLOSED on every missing prerequisite: never a soft skip.
 #
 # Usage: portal-scenario.sh <zImage-virt>
 # Env:   FLARE_EDGE  path to a flare-edge checkout (provides mock-flare-portal.py)
@@ -16,7 +16,7 @@ QDIR="$(cd "$HERE/.." && pwd)"                           # qemu/
 
 ZIMAGE="${1:-}"
 if [ -z "$ZIMAGE" ] || [ ! -f "$ZIMAGE" ]; then
-  echo "FATAL: usage: $0 <zImage> — the virt.fragment kernel variant" >&2
+  echo "FATAL: usage: $0 <zImage>: the virt.fragment kernel variant" >&2
   exit 1
 fi
 if [ -z "${FLARE_EDGE:-}" ] || [ ! -f "$FLARE_EDGE/tools/mock-flare-portal.py" ]; then
@@ -24,11 +24,11 @@ if [ -z "${FLARE_EDGE:-}" ] || [ ! -f "$FLARE_EDGE/tools/mock-flare-portal.py" ]
   exit 1
 fi
 [ -x "$QDIR/payload/warden-flared" ] || {
-  echo "FATAL: no qemu/payload/warden-flared — build a static musl armv7 flared (see qemu/payload/README.md)" >&2
+  echo "FATAL: no qemu/payload/warden-flared: build a static musl armv7 flared (see qemu/payload/README.md)" >&2
   exit 1
 }
 command -v qemu-system-arm >/dev/null || {
-  echo "FATAL: qemu-system-arm not on PATH — see qemu/README.md" >&2
+  echo "FATAL: qemu-system-arm not on PATH: see qemu/README.md" >&2
   exit 1
 }
 
@@ -56,7 +56,7 @@ FW_SIGNING_KEY_FILE="$FLARE_EDGE/tools/testdata/fw-dev-key.seed" \
   WARDEN_UBOOT_VERSION=2017.09 \
   bash "$FLARE_EDGE/tools/mk-wfw.sh" "$WORK/rootfs-payload.img" 1 0.0.2 "$WORK/offer.wfw"
 
-# 1. mock portal on the host, our device pre-registered (no pairing needed —
+# 1. mock portal on the host, our device pre-registered (no pairing needed:
 #    the same credential-seeding shortcut fw-e2e-test.sh uses), offering the .wfw.
 python3 "$FLARE_EDGE/tools/mock-flare-portal.py" \
   --port "$PORT" --device "$DEVICE_ID:$API_KEY" \
@@ -79,7 +79,7 @@ echo "== mock portal on :$PORT, device $DEVICE_ID"
 
 # 2. image seeded with the portal URL + credentials.
 bash "$QDIR/mkinitramfs.sh"
-# All four enrolment keys — flare::enrolment() returns None (and the report
+# All four enrolment keys: flare::enrolment() returns None (and the report
 # loop parks forever) unless flare.site is present too.
 bash "$QDIR/mkimage.sh" \
   --portal-url "http://10.0.2.2:$PORT" \
@@ -88,7 +88,7 @@ bash "$QDIR/mkimage.sh" \
   --state "flare.site=qemu-devsim"
 
 # 3. boot the VM headless (daemons run; console log to file). Random hostfwd
-#    ports can collide with another process — detect the early qemu bind
+#    ports can collide with another process. Detect the early qemu bind
 #    failure and retry with a fresh base rather than failing spuriously.
 QEMU_PID=""
 for _attempt in 1 2 3; do
@@ -103,7 +103,7 @@ for _attempt in 1 2 3; do
     break
   fi
   if grep -aq 'Could not set up host forwarding' "$WORK/console.log"; then
-    echo "== hostfwd port collision on base $VMBASE — retrying"
+    echo "== hostfwd port collision on base $VMBASE, retrying"
     QEMU_PID=""
     continue
   fi
@@ -116,7 +116,7 @@ if [ -z "$QEMU_PID" ] || ! kill -0 "$QEMU_PID" 2>/dev/null; then
   exit 1
 fi
 
-# 4. assert: rootfs up, and the portal saw — from OUR device id — an
+# 4. assert: rootfs up, and the portal saw (from OUR device id) an
 #    authenticated check-in, the firmware desired-state pull, and the signed
 #    .wfw asset download (i.e. flared accepted the offer and fetched it; the
 #    verify+stage+APPLYING that follow are a dry run without

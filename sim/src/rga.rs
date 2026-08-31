@@ -1,9 +1,9 @@
-//! RGA 2D blitter model — a recording `improcess` fake.
+//! RGA 2D blitter model: a recording `improcess` fake.
 //!
 //! `warden_rga.c` offloads copies/scales/format-conversions to the RGA via
 //! librga's `improcess(src, dst, ..., IM_SYNC)`, and falls back to the CPU draw
 //! path when it returns anything but `IM_STATUS_SUCCESS`. The blit *pixels* are
-//! not modelled — what matters for testing is the **dispatch** logic: which ops
+//! not modelled. What matters for testing is the **dispatch** logic: which ops
 //! get sent, with what geometry/format, and that a non-success status drives the
 //! CPU fallback. So the sim records each requested op and returns a programmable
 //! status. It rides its own call seam (behind the driver's `#if WARDEN_USE_RGA`),
@@ -18,7 +18,7 @@ pub struct Rect {
     pub h: i32,
 }
 
-/// A surface descriptor — the subset of im2d `rga_buffer_t` the dispatch cares
+/// A surface descriptor: the subset of im2d `rga_buffer_t` the dispatch cares
 /// about (dimensions + pixel format).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Surface {
@@ -141,7 +141,7 @@ mod tests {
             r.improcess(surf(10, 10), surf(10, 10), rect(10, 10), rect(10, 10)),
             ImStatus::Failed
         );
-        // the op is still recorded — the driver dispatched it, then fell back.
+        // the op is still recorded: the driver dispatched it, then fell back.
         assert_eq!(r.count(), 1);
     }
 

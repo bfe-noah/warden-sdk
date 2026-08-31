@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Fetch (with retries) and sha256-verify the pristine kernel tarball into $1.
 # Single source of truth for the URL + verification used by build-kernel.sh
-# and both CI jobs (patches-apply, kernel-build) — a KVER bump edits this file
+# and both CI jobs (patches-apply, kernel-build): a KVER bump edits this file
 # and build-kernel.sh only. FAILS CLOSED: a missing pin refuses to proceed.
 #
 # Usage: fetch-kernel-tarball.sh <destination-path>
@@ -17,7 +17,7 @@ TB="${1:?usage: fetch-kernel-tarball.sh <destination-path>}"
 # Pin first: a forgotten pin on a KVER bump should refuse BEFORE burning a
 # 140MB download it will then reject anyway.
 [ -f "$SHA_FILE" ] || {
-  echo "FATAL: no pinned sha256 for linux-$KVER (expected $SHA_FILE) — refusing an unverified tarball" >&2
+  echo "FATAL: no pinned sha256 for linux-$KVER (expected $SHA_FILE): refusing an unverified tarball" >&2
   exit 1
 }
 if [ ! -f "$TB" ]; then

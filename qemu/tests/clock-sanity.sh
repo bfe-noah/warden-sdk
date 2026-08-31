@@ -2,7 +2,7 @@
 # Clock-sanity scenario (issue #3 regression guard): boot the VM, run the
 # musl-static clockprobe in the guest, and assert the vDSO monotonic RATE
 # matches the kernel's /proc/uptime within 1%. Under QEMU -M virt this passes
-# on the current kernel (measured 0.99963) — a regression here means the
+# on the current kernel (measured 0.99963): a regression here means the
 # generic vDSO path broke. The RV1106 *board* leg of issue #3 is a separate,
 # bench-only measurement; this scenario cannot see board-specific CNTFRQ or
 # CNTVOFF misprogramming.
@@ -21,7 +21,7 @@ if [ -z "$ZIMAGE" ] || [ ! -f "$ZIMAGE" ]; then
   exit 1
 fi
 command -v qemu-system-arm >/dev/null || {
-  echo "FATAL: qemu-system-arm not on PATH — see qemu/README.md" >&2
+  echo "FATAL: qemu-system-arm not on PATH: see qemu/README.md" >&2
   exit 1
 }
 command -v arm-linux-gnueabihf-gcc >/dev/null || {
@@ -58,7 +58,7 @@ for _attempt in 1 2 3; do
   sleep 3
   kill -0 "$QEMU_PID" 2>/dev/null && break
   if grep -aq 'Could not set up host forwarding' "$WORK/console.log"; then
-    echo "== hostfwd port collision on base $PORT — retrying"
+    echo "== hostfwd port collision on base $PORT, retrying"
     QEMU_PID=""
     continue
   fi

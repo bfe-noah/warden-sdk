@@ -2,7 +2,7 @@
 name = "warden-rs485-bridge"
 version = "0.1.0"
 edition = "2021"
-description = "Bridges a QEMU serial chardev (unix socket) to the warden-sim Modbus RTU slave, so the VM guest's RS-485 master polls the same simulated field bus the unit tests do — fault injection included."
+description = "Bridges a QEMU serial chardev (unix socket) to the warden-sim Modbus RTU slave, so the VM guest's RS-485 master polls the same simulated field bus the unit tests do, fault injection included."
 license = "GPL-2.0-only"
 
 [lib]

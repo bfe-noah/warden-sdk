@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0-only
 #
-# aic8800_bsp — SDIO bus glue + firmware bootstrap, ported in-tree from the
+# aic8800_bsp: SDIO bus glue + firmware bootstrap, ported in-tree from the
 # vendor out-of-tree Makefile (flare-edge/sdk/sysdrv/drv_ko/wifi/aic8800dc/
 # aic8800_bsp/Makefile). CONFIG_AIC_FW_PATH is now a real Kconfig string
-# symbol (see ../Kconfig) so it needs no -D here — the driver picks it up
+# symbol (see ../Kconfig) so it needs no -D here; the driver picks it up
 # from include/generated/autoconf.h directly (aicsdio.c, aic_bsp_driver.h).
 #
 # Vendor CONFIG_* build-time knobs below are preserved as fixed -D flags

@@ -1,7 +1,7 @@
 # Guest Payloads
 
 Drop **static musl armv7** binaries in this directory (contents are
-gitignored — binaries are never committed); `qemu/mkimage.sh` copies everything
+gitignored; binaries are never committed); `qemu/mkimage.sh` copies everything
 in this directory (except this README) into `/usr/bin/` of both rootfs slots.
 Static musl is the same target the device uses for its Rust daemons, so the
 exact production binaries run unmodified in the VM.
@@ -21,6 +21,6 @@ cp <flare-edge>/target/armv7-unknown-linux-musleabihf/release/warden-flared qemu
 ```
 
 Stage-2 init starts `warden-flared`, `warden-modbus`, and `warden-ui` (the
-UI additionally needs `--display on|headless` + the virt.fragment kernel for
+UI also needs `--display on|headless` + the virt.fragment kernel for
 /dev/fb0) automatically when present (logs land in `/tmp/<name>.log` inside
-the guest). An empty payload is valid — the image boots busybox-only.
+the guest). An empty payload is valid: the image boots busybox-only.

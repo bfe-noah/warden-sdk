@@ -3,7 +3,7 @@
 //! Dependency-free (`harness = false`): a fixed-iteration timing loop, so the sim
 //! crate keeps zero deps and CI can capture a stable ns/op number per model with no
 //! criterion tree to compile. Human-readable timings go to stdout; one JSON line per
-//! benchmark goes to stderr for CI trend capture (`bench: … ns_per_op …`).
+//! benchmark goes to stderr for CI trend capture (`bench: ... ns_per_op ...`).
 //!
 //! Run: `cargo bench` (or `cargo run --release --bench sim_bench`).
 

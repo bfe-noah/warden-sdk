@@ -3,5 +3,5 @@ config AIC8800_WLAN_SUPPORT
 	default y
 	help
 	  This is support for the aic8800 cfg80211 full-MAC wifi driver
-	  (aic8800_fdrv). Built-in (y) by default — see the aic8800 port
+	  (aic8800_fdrv). Built-in (y) by default, see the aic8800 port
 	  notes in warden-sdk/kernel/rv1106-enablement/wifi/.

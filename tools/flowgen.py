@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""flowgen — generate mermaid flowcharts for the workflows the SDK tests.
+"""flowgen: generate mermaid flowcharts for the workflows the SDK tests.
 
 future-features-2 asks that the test harness "produce flowcharts of every workflow
 and process that it tests so a user can understand them better", each carrying its
 benchmark. This emits one `docs/workflows/<name>.md` per workflow: an outcome-first
-flowchart (from the modelled decision path) plus the workflow's metric — a benchmark
+flowchart (from the modelled decision path) plus the workflow's metric: a benchmark
 ns/op for the sim-modelled hardware workflows, or the MC/DC result for the Tier-1
 driver workflows.
 
@@ -86,7 +86,7 @@ WORKFLOWS = [
         "name": "relay-drive",
         "title": "Relay Drive",
         "outcome": "A relay is exported transparently and driven without disturbing a held contact.",
-        "metric": ("mcdc", "relays.c — 40/40 conditions, 100% MC/DC (CI-enforced)"),
+        "metric": ("mcdc", "relays.c: 40/40 conditions, 100% MC/DC (CI-enforced)"),
         "mermaid": """flowchart TD
   A[warden_relay_set idx,on] --> B{idx < COUNT?}
   B -- no --> Z[no-op]
@@ -104,7 +104,7 @@ WORKFLOWS = [
         "name": "freshness-contract",
         "title": "UI Freshness Contract",
         "outcome": "The UI never shows a stale number: it holds briefly, then marks unknown.",
-        "metric": ("mcdc", "freshness.c — 66/66 conditions, 100% MC/DC (CI-enforced)"),
+        "metric": ("mcdc", "freshness.c: 66/66 conditions, 100% MC/DC (CI-enforced)"),
         "mermaid": """flowchart TD
   A[produce] --> B{result}
   B -- OK --> V[render value, save last]

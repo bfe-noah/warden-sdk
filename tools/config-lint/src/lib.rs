@@ -1,10 +1,10 @@
-//! config-lint — static target-config checks the behavioural sim cannot cover.
+//! config-lint: static target-config checks the behavioural sim cannot cover.
 //!
 //! The c8a3 brick was a memory-map fault, not a logic bug: the boot-loaded MCU's
 //! load address (`0x40000`) is a `reserved-memory` carve-out on Thunder-Boot
 //! boards but plain kernel RAM on ours, so the coprocessor firmware and the kernel
-//! fought over the same DRAM and the board hung before eth0. No sim catches that —
-//! it needs a static check against the target devicetree: **every address the
+//! fought over the same DRAM and the board hung before eth0. No sim catches that.
+//! It needs a static check against the target devicetree: **every address the
 //! idblock loader drops MCU firmware to must sit inside a `reserved-memory` node.**
 //!
 //! This module parses the two authoritative artifacts (the rkbin loader `.ini`
@@ -38,7 +38,7 @@ pub struct Finding {
     pub msg: String,
 }
 
-/// A byte that can appear inside a devicetree node/property identifier — used to
+/// A byte that can appear inside a devicetree node/property identifier: used to
 /// require a token boundary before a `reg` property, so substrings like `reg-names`
 /// or a `region-*` node label are not matched as the `reg` property itself.
 fn is_ident_byte(b: u8) -> bool {
@@ -54,19 +54,19 @@ fn parse_addr(s: &str) -> Option<u64> {
     }
 }
 
-/// Loaders that are part of the normal RK boot chain — DDR init, SPL/miniloader, the
-/// secure monitor, U-Boot — and are NOT boot-loaded coprocessor firmware, so their
+/// Loaders that are part of the normal RK boot chain (DDR init, SPL/miniloader, the
+/// secure monitor, U-Boot) and are NOT boot-loaded coprocessor firmware, so their
 /// LOAD_ADDR (if any) is the vendor boot flow, not a DRAM carve-out that must be
 /// reserved. Anything NOT on this allowlist that declares a LOAD_ADDR is treated as
 /// a coprocessor load and checked (**fail closed**): a future MCU named
 /// "Rtos"/"Bl32"/"M0" must not slip through an MCU-*name* allowlist the way the
-/// original `hpmcu`/`mcu`/`amp` substring test would have — that is exactly the
+/// original `hpmcu`/`mcu`/`amp` substring test would have: that is exactly the
 /// c8a3 0x40000-brick class this tool exists to catch.
 ///
 /// Matched as a WHOLE normalized name (separators stripped), never a substring, so a
-/// coprocessor whose vendor name merely *contains* a boot-chain word — "AudioLoader"
-/// ⊃ "loader", "SplRtos" ⊃ "spl", "Bl32" (≠ "bl31") — is still checked, not waved
-/// through. Over-inclusion here would only over-report (the safe direction); a missed
+/// coprocessor whose vendor name merely *contains* a boot-chain word ("AudioLoader"
+/// contains "loader", "SplRtos" contains "spl", "Bl32" is not "bl31") is still checked,
+/// not waved through. Over-inclusion here would only over-report (the safe direction); a missed
 /// coprocessor is the dangerous one.
 fn is_known_safe_loader(name: &str) -> bool {
     let n: String = name
@@ -185,8 +185,8 @@ pub fn parse_reserved_ranges(dt: &str) -> Vec<Range> {
             j += 1;
         }
         // scan `reg = <addr size>` PROPERTY tokens inside [start, j). Match `reg` as
-        // a whole token — identifier boundary before it, `=` after optional space —
-        // so a `reg-names` property or a `region-*@…` node label (both contain the
+        // a whole token (identifier boundary before it, `=` after optional space),
+        // so a `reg-names` property or a `region-*@...` node label (both contain the
         // substring "reg") is not misparsed into a bogus range.
         let block = &dt[start..j.min(dt.len())];
         let bb = block.as_bytes();
@@ -234,8 +234,8 @@ pub fn check(loads: &[McuLoad], reserved: &[Range]) -> Vec<Finding> {
         .map(|l| Finding {
             load: l.clone(),
             msg: format!(
-                "{}={} loads MCU firmware at {:#x} but no reserved-memory node covers it \
-                 — kernel/MCU DRAM collision (the 0x40000 brick class)",
+                "{}={} loads MCU firmware at {:#x} but no reserved-memory node covers it: \
+                 kernel/MCU DRAM collision (the 0x40000 brick class)",
                 l.loader, l.name, l.load_addr
             ),
         })
@@ -338,7 +338,7 @@ FLAG=0x10007
     "#;
 
     /// Regression (correctness review): `reg` must match as a whole property token,
-    /// not a bare substring — the `region-*` label, `reg-names`, and the
+    /// not a bare substring: the `region-*` label, `reg-names`, and the
     /// `interrupts` cells must NOT be misparsed into extra ranges.
     #[test]
     fn reg_token_not_substring() {
@@ -349,7 +349,7 @@ FLAG=0x10007
     }
 
     // A future coprocessor loader named nothing like hpmcu/mcu/amp, at an
-    // unreserved DRAM address — the exact case an MCU-name allowlist would miss.
+    // unreserved DRAM address: the exact case an MCU-name allowlist would miss.
     const UNKNOWN_MCU_INI: &str = r#"
 [LOADER_OPTION]
 NUM=2
@@ -378,7 +378,7 @@ LOAD_ADDR=0x40000
     }
 
     // Coprocessor names that merely *contain* a safe boot-chain word, each with a
-    // LOAD_ADDR: "AudioLoader" ⊃ "loader", "SplRtos" ⊃ "spl", "Bl32" (≠ "bl31").
+    // LOAD_ADDR: "AudioLoader" contains "loader", "SplRtos" contains "spl", "Bl32" is not "bl31".
     const SUBSTRING_TRAP_INI: &str = r#"
 [LOADER_OPTION]
 NUM=4
@@ -399,7 +399,7 @@ LOAD_ADDR=0x70000
 "#;
 
     /// Regression (2nd-pass correctness review): the safe allowlist matches a WHOLE
-    /// normalized name, never a substring — a coprocessor whose name contains a
+    /// normalized name, never a substring: a coprocessor whose name contains a
     /// boot-chain word must NOT be waved through. FlashData (a real boot component,
     /// no LOAD_ADDR here) stays safe; the three coprocessors are all checked.
     #[test]

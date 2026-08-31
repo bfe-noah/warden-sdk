@@ -5,13 +5,13 @@
 //! it as a 32-bit poke or peek at a physical address. `MemBus` is that operation,
 //! abstracted so the same driver/supervisor code runs against either:
 //!
-//!   * the **real** backend — an mmap of `/dev/mem` (lives in flared's
+//!   * the **real** backend: an mmap of `/dev/mem` (lives in flared's
 //!     `devmem.rs`; it will implement this trait so its logic is host-testable), or
-//!   * the **sim** backend — [`SimBus`], an in-memory word map.
+//!   * the **sim** backend: [`SimBus`], an in-memory word map.
 //!
 //! `SimBus` is `Clone` + internally `Arc<Mutex<..>>`, so the simulated MCU core
 //! and the "Linux side" can each hold a handle and read/write the *same* shared
-//! memory — exactly the two-core mailbox the real system uses — with no
+//! memory (exactly the two-core mailbox the real system uses) with no
 //! cache-maintenance dance to model (the real mailbox sits in the GRF uncached
 //! window).
 
@@ -36,7 +36,7 @@ impl SimBus {
         Self::default()
     }
 
-    /// Snapshot every written word (address-sorted) — for test assertions/dumps.
+    /// Snapshot every written word (address-sorted), for test assertions/dumps.
     pub fn dump(&self) -> Vec<(u64, u32)> {
         let g = self.words.lock().unwrap();
         let mut v: Vec<(u64, u32)> = g.iter().map(|(&a, &w)| (a, w)).collect();

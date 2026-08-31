@@ -1,4 +1,4 @@
-# M2 earlycon config fragment for the RV1106 → Linux 6.18 forward-port.
+# M2 earlycon config fragment for the RV1106 -> Linux 6.18 forward-port.
 #
 # Base: multi_v7_defconfig (PORT-STATUS confirms it configures and CLK_RV1106
 # wires in cleanly). Apply this fragment on top, then `make olddefconfig`:
@@ -8,7 +8,7 @@
 #   make ARCH=arm CROSS_COMPILE=... olddefconfig zImage
 #
 # This builds an 11.8 MB zImage with our ported SoC drivers compiled in
-# (clk-rv1106.o, pinctrl-rockchip.o with the rv1106 data) — verified 2026-08-24.
+# (clk-rv1106.o, pinctrl-rockchip.o with the rv1106 data), verified 2026-08-24.
 
 # --- our ported RV1106 SoC drivers ---
 CONFIG_ARCH_ROCKCHIP=y

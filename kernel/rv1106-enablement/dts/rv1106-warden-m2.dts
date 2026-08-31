@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
- * Minimal RV1106 devicetree for the WardenOS 86-Panel — M2 "earlycon" bring-up
+ * Minimal RV1106 devicetree for the WardenOS 86-Panel, M2 "earlycon" bring-up
  * of the self-built Linux 6.18 forward-port (warden-sdk kernel/docs/bringup.md).
  *
  * Deliberately NOT the full vendor rv1106.dtsi: just the core needed to reach
- * "it's alive" on the debug UART — CPU, GIC, arch timer, RAM, the CRU (our
+ * "it's alive" on the debug UART: CPU, GIC, arch timer, RAM, the CRU (our
  * ported clk-rv1106), GRF, and uart2 (the console, driven by mainline 8250_dw).
  * earlycon writes uart2's MMIO directly at the bootloader's divisor, so it prints
  * before the clock/pinctrl drivers probe; the real ttyS console then needs the
  * CRU to hand out SCLK_UART2, which is exactly what this validates on hardware.
  *
  * PORT-VERIFY (must be checked against the TRM / on hardware before trusting a
- * boot — a wrong value here silently hangs the board):
+ * boot; a wrong value here silently hangs the board):
  *   - memory size/base (256 MiB @ 0x0 assumed for the 86-Panel; the loader
- *     usually patches this — confirm against the real DDR init);
+ *     usually patches this; confirm against the real DDR init);
  *   - uart2 is the console at 0xff4c0000 (matches the vendor ttyFIQ0 base);
- *   - CRU needs no assigned-clocks here (PLLs keep their loader rates) — fine for
+ *   - CRU needs no assigned-clocks here (PLLs keep their loader rates), fine for
  *     earlycon/console, revisit for the full clock tree.
  */
 /dts-v1/;
@@ -25,7 +25,7 @@
 #include <dt-bindings/clock/rv1106-cru.h>
 
 / {
-	model = "WardenOS 86-Panel (RV1106) — M2 earlycon bring-up";
+	model = "WardenOS 86-Panel (RV1106), M2 earlycon bring-up";
 	compatible = "rockchip,rv1106";
 	#address-cells = <1>;
 	#size-cells = <1>;
@@ -47,7 +47,7 @@
 
 	memory@0 {
 		device_type = "memory";
-		reg = <0x00000000 0x10000000>; /* 256 MiB — PORT-VERIFY */
+		reg = <0x00000000 0x10000000>; /* 256 MiB: PORT-VERIFY */
 	};
 
 	xin24m: oscillator {

@@ -1,4 +1,4 @@
-# NPU (rknpu) open kernel driver — VERIFIED on warden-c8a3 (2026-08-25)
+# NPU (rknpu) open kernel driver: VERIFIED on warden-c8a3 (2026-08-25)
 
 The open GPL rknpu kernel driver runs on our self-built Linux 6.18.46. This is the
 achievable open end state (Tier A in `OPEN-NPU-PLAN.md`); open *compute* remains a
@@ -17,7 +17,7 @@ $ rknpu_version_test
         power-get/put, and clock/reset all exercised.
 ```
 The `RKNPU_GET_DRV_VERSION`/`RKNPU_GET_HW_VERSION` ioctls exercise the full
-dispatch → power-domain get/put → clock/reset path, so a clean answer confirms the
+dispatch -> power-domain get/put -> clock/reset path, so a clean answer confirms the
 whole driver bring-up, not just registration.
 
 ## The fix that took it from probe-fail to PASS
@@ -25,16 +25,16 @@ The base dtsi `npu@ff660000` node declares its interrupt but has **no
 `interrupt-names`**; the rknpu driver requests its IRQ by name (`"npu_irq"`), so
 probe bailed `error -ENXIO: IRQ npu_irq not found` and never registered its DRM
 device. Board DTS override adds `interrupt-names = "npu_irq";` (+ `status="okay"`).
-(The rest of the port — GPL source, 4 compat-shim headers for dead-code vendor
-headers, 10 mechanical 6.18 API deltas — is in `PORT-PROGRESS.md`.)
+(The rest of the port (GPL source, 4 compat-shim headers for dead-code vendor
+headers, 10 mechanical 6.18 API deltas) is in `PORT-PROGRESS.md`.)
 
 Also: the version test must iterate DRM cards and keep the one that ANSWERS the
-ioctl — the display card (card0) opens fine but returns EINVAL. Fixed in
+ioctl. The display card (card0) opens fine but returns EINVAL. Fixed in
 `rknpu_version_test.c`.
 
 ## The honest ceiling (why "100% open NPU" stops at the driver)
 The kernel driver only DMAs an opaque userspace-authored `regcmd` blob into the PC
-registers and pulses go — it never inspects the compute stream. The compute-engine
+registers and pulses go. It never inspects the compute stream. The compute-engine
 register map (TRM Part 2) is not public for RV1106, there is **zero open RE prior
 art** for this NPU generation, and only the closed RKNN-Toolkit2 compiler emits
 valid regcmd. Mainline `accel/rocket` + Mesa Teflon are RK3588-only (64-bit). So an

@@ -1,4 +1,4 @@
-# HPMCU mailbox-echo firmware — bare-metal RV32IMC for the RV1106 SCR1 core.
+# HPMCU mailbox-echo firmware: bare-metal RV32IMC for the RV1106 SCR1 core.
 # Same xPack riscv-none-embed-gcc 10.2.0 + flags as the watchdog firmware.
 
 # Point XPACK at the xpack riscv toolchain bin/ inside a flare-edge SDK checkout.

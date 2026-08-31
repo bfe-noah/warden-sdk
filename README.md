@@ -6,14 +6,14 @@
 ![Coverage](.github/badges/coverage.svg)
 
 A modern, open development environment for the **Luckfox Pico 86 Panel**
-(Rockchip RV1106), replacing the vendor SDK — and honest about what runs on
+(Rockchip RV1106), replacing the vendor SDK, and honest about what runs on
 real silicon versus what is simulated.
 
 | | Vendor SDK | This repo |
 |---|---|---|
-| **Kernel** | 5.10.160, twice-forked, frozen | **6.18.46** — a reviewable, subsystem-split patch series onto pristine upstream; full peripheral set (display, touch, wifi, audio, NPU, ...) hardware-verified on a bench panel |
+| **Kernel** | 5.10.160, twice-forked, frozen | **6.18.46**: a reviewable, subsystem-split patch series onto pristine upstream; full peripheral set (display, touch, wifi, audio, NPU, ...) hardware-verified on a bench panel |
 | **Build** | ~2 GB tree, absolute paths baked in, Kconfig options silently dropped | one hermetic script: sha256-pinned source fetch, fail-closed patch apply and config fragments |
-| **Off-device testing** | none — every change means flashing a panel | register-level hardware models (`sim/`) plus a QEMU device VM booting the real kernel, real daemons, and the real UI with display + touch |
+| **Off-device testing** | none; every change means flashing a panel | register-level hardware models (`sim/`) plus a QEMU device VM booting the real kernel, real daemons, and the real UI with display + touch |
 | **Config safety** | memory-map mistakes reach hardware (one bricked a bench unit) | static gates (`tools/config-lint`) catch them before any flash |
 | **CI** | none | hosted pipeline: tests, coverage, benchmarks, patch-apply gate, kernel build with an in-CI QEMU boot smoke |
 | **Flashing tools** | closed (`upgrade_tool`) | open (`rkdeveloptool`) |
@@ -51,7 +51,7 @@ scenario tests (portal, OTA apply, display + touch, watchdog).
 | Directory | Contents |
 |---|---|
 | `patches/` | the RV1106 forward-port onto pristine linux-6.18.46, subsystem-split |
-| `build/` | hermetic kernel build: pinned fetch → apply patches → `zImage` + dtb |
+| `build/` | hermetic kernel build: pinned fetch -> apply patches -> `zImage` + dtb |
 | `qemu/` | device simulator: QEMU `-M virt` boots the real kernel and real userspace |
 | `sim/` | register-level hardware models (Rust): membus, HPMCU, CRU, Modbus, RGA, NPU |
 | `drivers/` | hardened hardware-facing drivers: HAL seams, test harnesses |
@@ -74,24 +74,24 @@ each other. Full detail: `docs/architecture.md`.
 | `lvglsim` (downstream) | the LVGL UI on SDL | rendering and UI flows |
 
 With the production UI binary in `qemu/payload/`, `run.sh --display on` opens
-the panel's 720x720 screen in a window, mouse clicks landing as touch —
+the panel's 720x720 screen in a window, mouse clicks landing as touch:
 device and UI in one VM. Emulation results are never on-silicon evidence;
 the simulators narrow which claims need a panel.
 
 ## Principles
 
-- **Open** — open tools over closed ones; GPL-2.0-only.
-- **Hard** — every seam has a fault-injection path; recovery code is tested
+- **Open**: open tools over closed ones; GPL-2.0-only.
+- **Hard**: every seam has a fault-injection path; recovery code is tested
   against failure, not just success.
-- **Modern** — the newest kernel the hardware can run, current toolchains,
+- **Modern**: the newest kernel the hardware can run, current toolchains,
   Rust for new host-testable code, reproducible builds.
 
 ## Downstream
 
 A private firmware repo (flare-edge) consumes this SDK; issue references and
 checkout paths pointing there are engineering context, not reachable links.
-The QEMU simulator runs its production binaries unmodified — real
-over-the-air updates included.
+The QEMU simulator runs its production binaries unmodified,
+real over-the-air updates included.
 
 ## License
 

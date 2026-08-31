@@ -8,7 +8,7 @@
 # RV1106-only init steps degrade on virt (backlight, goodix, npu, the 5.10
 # /oem modules fail vermagic), and binaries older than the flare-edge #106
 # fix reproduce that crash faithfully. Interactive login uses the image's own
-# credentials — deliberately not recorded here.
+# credentials: deliberately not recorded here.
 #
 # FAILS CLOSED on missing prerequisites.
 #
@@ -21,12 +21,12 @@ QDIR="$(cd "$HERE/.." && pwd)"                           # qemu/
 ZIMAGE="${1:-}"; ROOTFS="${2:-}"; OEM="${3:-}"
 for f in "$ZIMAGE" "$ROOTFS" "$OEM"; do
   if [ -z "$f" ] || [ ! -f "$f" ]; then
-    echo "FATAL: usage: $0 <zImage> <rootfs.img> <oem.img> — '$f' missing" >&2
+    echo "FATAL: usage: $0 <zImage> <rootfs.img> <oem.img>: '$f' missing" >&2
     exit 1
   fi
 done
 command -v qemu-system-arm >/dev/null || {
-  echo "FATAL: qemu-system-arm not on PATH — see qemu/README.md" >&2
+  echo "FATAL: qemu-system-arm not on PATH: see qemu/README.md" >&2
   exit 1
 }
 
@@ -51,7 +51,7 @@ for _attempt in 1 2 3; do
   sleep 3
   kill -0 "$QEMU_PID" 2>/dev/null && break
   if grep -aq 'Could not set up host forwarding' "$WORK/console.log"; then
-    echo "== hostfwd port collision on base $PORT — retrying"
+    echo "== hostfwd port collision on base $PORT, retrying"
     QEMU_PID=""
     continue
   fi

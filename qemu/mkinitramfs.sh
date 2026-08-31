@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build the QEMU device-sim initramfs: the pinned static busybox + qemu/rootfs/.
-# The busybox binary is the ONLY external input (sha256-pinned, fail-closed —
+# The busybox binary is the ONLY external input (sha256-pinned, fail-closed:
 # see qemu/lib.sh).
 #
 # Env:

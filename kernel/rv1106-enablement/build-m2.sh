@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# build-m2.sh — reproducible M2 (earlycon) build of the RV1106 → 6.18 forward-port.
+# build-m2.sh: reproducible M2 (earlycon) build of the RV1106 -> 6.18 forward-port.
 #
 # Produces: a zImage with our ported SoC drivers, and rv1106-warden-m2.dtb.
 # Boot is a separate on-hardware step (see PORT-STATUS.md "M2 boot").

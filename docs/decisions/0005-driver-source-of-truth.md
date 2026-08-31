@@ -1,4 +1,4 @@
-# ADR 0005 — Driver Source of Truth
+# ADR 0005: Driver Source of Truth
 
 **Status:** Accepted (2026-08-25).
 
@@ -18,4 +18,4 @@ formalized as a patch series in `patches/`. flare-edge consumes this repo later
 - Realizes the seam architecture (ADR-referenced in `docs/architecture.md`).
 - flare-edge is not edited now; a later integration step points flare-edge at these.
 - Risk: temporary duplication of shared constants between the two repos until the
-  integration lands — tracked, acceptable for the bring-up window.
+  integration lands; tracked, acceptable for the bring-up window.

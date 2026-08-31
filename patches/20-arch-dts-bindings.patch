@@ -1835,7 +1835,7 @@ index 000000000..418652552
 +#include <dt-bindings/clock/rv1106-cru.h>
 +
 +/ {
-+	model = "WardenOS 86-Panel (RV1106) — M2 earlycon bring-up";
++	model = "WardenOS 86-Panel (RV1106), M2 earlycon bring-up";
 +	compatible = "rockchip,rv1106";
 +	#address-cells = <1>;
 +	#size-cells = <1>;

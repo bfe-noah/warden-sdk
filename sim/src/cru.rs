@@ -2,17 +2,17 @@
 //!
 //! `reboot -f` does NOT reset the RV1106 (no PSCI/restart handler). The canonical
 //! reset is the CRU global-first software reset (rung 1), with the DesignWare
-//! watchdog as a backstop (rung 2) — the ladder in flared's `devmem::hard_reset`.
-//! This model lets that ladder, and the boot-mode → MaskRom recovery maneuver, be
+//! watchdog as a backstop (rung 2): the ladder in flared's `devmem::hard_reset`.
+//! This model lets that ladder, and the boot-mode -> MaskRom recovery maneuver, be
 //! exercised entirely on the host: run the pokes against a [`SimBus`], then
 //! [`CruSim::poll`] to see which rung fired and what boot mode a warm reset lands in.
 //!
 //! It bakes in the two hardware facts that cost real hardware time:
-//!   * the CRU global-reset register is `0xff3b0c08` magic `0xfdb9` — the offset
+//!   * the CRU global-reset register is `0xff3b0c08` magic `0xfdb9`: the offset
 //!     `0xff3a0614` from *other* Rockchip SoCs is a **silent no-op** here (the model
 //!     ignores it, so a regression that reverts to the wrong offset fails a test);
 //!   * the boot-mode register `0xff020200` **survives a warm reset** and is cleared
-//!     only by a power-on reset — the mechanism that makes "set MaskRom, then reset"
+//!     only by a power-on reset: the mechanism that makes "set MaskRom, then reset"
 //!     drop the SoC into BootROM download without the BOOT button.
 
 use crate::membus::MemBus;
@@ -20,7 +20,7 @@ use crate::membus::MemBus;
 /// Correct RV1106 global-first software reset (confirmed on hardware 2026-08-14).
 pub const CRU_GLB_SRST_FST: u64 = 0xff3b_0c08;
 pub const CRU_GLB_SRST_MAGIC: u32 = 0xfdb9;
-/// Wrong offset carried over from other Rockchip SoCs — a silent no-op on RV1106.
+/// Wrong offset carried over from other Rockchip SoCs: a silent no-op on RV1106.
 pub const CRU_WRONG_OFFSET: u64 = 0xff3a_0614;
 
 /// DesignWare watchdog (rung 2 backstop).
@@ -212,7 +212,7 @@ mod tests {
     }
 
     /// The boot-mode register survives a (warm) reset: set MaskRom, reset via CRU,
-    /// and the model lands in MaskRom — the on-demand BootROM-download maneuver.
+    /// and the model lands in MaskRom: the on-demand BootROM-download maneuver.
     #[test]
     fn maskrom_survives_warm_reset() {
         let bus = SimBus::new();
@@ -224,7 +224,7 @@ mod tests {
     }
 
     /// A power-on reset clears the boot-mode register (unlike a warm reset), so a
-    /// stale MaskRom request does not strand the device — it boots Normal.
+    /// stale MaskRom request does not strand the device: it boots Normal.
     #[test]
     fn power_on_reset_clears_maskrom_request() {
         let bus = SimBus::new();
