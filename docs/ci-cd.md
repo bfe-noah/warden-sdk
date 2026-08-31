@@ -20,12 +20,11 @@ execute code on private infrastructure (ADR-0007).
 
 ## Runner History
 
-`kernel-build` originally ran on a repo-scoped self-hosted runner (ADR-0004,
-2026-08-25, verified end-to-end) because hosted minutes were metered on the
-private repo. Going public made hosted minutes free and made a self-hosted
-registration a liability, so ADR-0007 moved the job to `ubuntu-latest` and
-retired the registration. Site-specific install records for that runner live
-in our private deployment log, not here.
+`kernel-build` originally ran on a repo-scoped self-hosted runner (ADR-0004)
+because hosted minutes were metered on the private repo. Going public made
+hosted minutes free and a self-hosted registration a fork-PR liability, so
+ADR-0007 retired it. That runner's site records live in the private
+deployment log, not here.
 
 ## Badges
 
