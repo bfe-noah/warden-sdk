@@ -39,5 +39,12 @@ if ! command -v switch_root >/dev/null; then
     return 0
 fi
 
+# Hand the live devtmpfs to the new root: busybox switch_root moves nothing,
+# and a REAL device rootfs's init expects /dev to already be there (its getty
+# opens /dev/console immediately). Our own skeleton init remounts devtmpfs
+# defensively either way.
+mkdir -p /mnt/dev
+mount -o move /dev /mnt/dev 2>/dev/null || mount --move /dev /mnt/dev
+
 echo "rc: switching root to rootfs${slot} ($root)"
 exec switch_root /mnt /sbin/init

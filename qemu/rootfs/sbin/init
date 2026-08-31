@@ -70,6 +70,16 @@ export WARDEN_FLARE_INSECURE=1
 # here, and flared's /dev/mem poke dies with an external abort (SIGBUS). The
 # SCR1 supervisor state machine is modeled in sim/src/hpmcu.rs instead.
 export WARDEN_HPMCU=0
+# Same class: the CRU reset ladder's /dev/mem poke is fatal on virt. A
+# post-apply "reboot" surfaces as a clean flared error; the scenario harness
+# performs the actual reboot into the applied slot.
+export WARDEN_HARD_RESET=0
+# OTA apply is opt-in per boot (run.sh --allow-apply): writing rootfs_b is
+# safe inside disk.img but must never be the default posture.
+if grep -qw warden.fwapply /proc/cmdline; then
+    export WARDEN_FW_ALLOW_APPLY=1
+    echo "init: OTA APPLY ENABLED (warden.fwapply)"
+fi
 for d in /usr/bin/warden-flared /usr/bin/warden-modbus; do
     if [ -x "$d" ]; then
         name="$(basename "$d")"
