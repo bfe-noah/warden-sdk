@@ -1,5 +1,9 @@
 # NPU Graphics Feasibility
 
+> Point-in-time engineering study, written while scoping the `rknpu.ko` 6.18
+> port for the downstream WardenOS firmware — "our boards" / "this product"
+> below refer to that context. The hardware conclusions apply to any 86 Panel.
+
 **Bottom line: no, not for 3D rendering — not "slower," but genuinely not how the
 hardware works past the first pipeline stage. The RKNPU on RV1106 is a
 fixed-function, INT8-only, command-stream tensor accelerator with no rasterizer,
