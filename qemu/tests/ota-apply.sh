@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# FULL OTA apply scenario — the loop the desk e2e stops short of: the real
+# FULL OTA apply scenario (the loop the desk e2e stops short of): the real
 # flared inside the VM downloads a real signed tier-1 .wfw whose payload is a
 # bootable rootfs, verifies it, and ACTUALLY WRITES rootfs_b (safe: it is a
 # region inside disk.img); the harness then reboots into slot _b and asserts
@@ -7,7 +7,7 @@
 #
 # Documented emulation gaps (ADR-0006): the BCB slot CHOICE and the physical
 # reset are performed by the harness (cmdline slot + a fresh qemu boot), not
-# by U-Boot/CRU — those stay bench territory.
+# by U-Boot/CRU. Those stay bench territory.
 #
 # FAILS CLOSED on missing prerequisites.
 #
@@ -22,7 +22,7 @@ PATH="$PATH:/usr/sbin:/sbin"
 
 ZIMAGE="${1:-}"
 if [ -z "$ZIMAGE" ] || [ ! -f "$ZIMAGE" ]; then
-  echo "FATAL: usage: $0 <zImage> — the virt.fragment kernel variant" >&2
+  echo "FATAL: usage: $0 <zImage>: the virt.fragment kernel variant" >&2
   exit 1
 fi
 if [ -z "${FLARE_EDGE:-}" ] || [ ! -f "$FLARE_EDGE/tools/mock-flare-portal.py" ]; then
@@ -34,7 +34,7 @@ fi
   exit 1
 }
 command -v qemu-system-arm >/dev/null || {
-  echo "FATAL: qemu-system-arm not on PATH — see qemu/README.md" >&2
+  echo "FATAL: qemu-system-arm not on PATH: see qemu/README.md" >&2
   exit 1
 }
 
@@ -52,7 +52,7 @@ API_KEY="$(python3 -c 'import secrets; print(secrets.token_hex(24))')"
 PORT=$((20000 + RANDOM % 20000))
 
 # 0. The offer's payload is a REAL bootable rootfs: the same skeleton the
-#    disk uses, stamped with the NEW version — booting it is the proof.
+#    disk uses, stamped with the NEW version: booting it is the proof.
 QEMU_DIR="$QDIR"
 OUT="$QDIR/out"
 # shellcheck source=qemu/lib.sh disable=SC1091
@@ -105,7 +105,7 @@ for _attempt in 1 2 3; do
   sleep 3
   kill -0 "$QEMU_PID" 2>/dev/null && break
   if grep -aq 'Could not set up host forwarding' "$WORK/console.log"; then
-    echo "== hostfwd port collision on base $VMBASE — retrying"
+    echo "== hostfwd port collision on base $VMBASE, retrying"
     QEMU_PID=""
     continue
   fi
@@ -117,7 +117,7 @@ if [ -z "$QEMU_PID" ] || ! kill -0 "$QEMU_PID" 2>/dev/null; then
 fi
 
 # 4. wait for the apply to conclude. flared logs to its in-guest file, not
-#    the console — but the next check-in REPORTS the outcome to the portal:
+#    the console, but the next check-in REPORTS the outcome to the portal:
 #    detail "hard reset failed after slot flip" is the exact post-apply state
 #    under the gated reset (write done, AvbABData flipped, reboot refused).
 deadline=$((SECONDS + 420))
@@ -140,7 +140,7 @@ grep -aq "GET /api/v1/devices/$DEVICE_ID/firmware/assets/.* -> 200" "$WORK/mock.
   echo "FATAL: staged without a portal asset download?!" >&2
   exit 1
 }
-echo "== apply staged (asset downloaded, rootfs_b written, reset gated) — rebooting into _b"
+echo "== apply staged (asset downloaded, rootfs_b written, reset gated), rebooting into _b"
 kill "$QEMU_PID" 2>/dev/null || true
 wait "$QEMU_PID" 2>/dev/null || true
 QEMU_PID=""

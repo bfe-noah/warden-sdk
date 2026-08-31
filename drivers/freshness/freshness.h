@@ -1,5 +1,5 @@
 /*
- * The UI Freshness Contract engine (flare-edge ADR-0004) — core, LVGL-free.
+ * The UI Freshness Contract engine (flare-edge ADR-0004): core, LVGL-free.
  *
  * The panel is read on-site to judge whether hardware is healthy, so a silently
  * *stale* number is worse than a missing one: a stale IP or hashrate reads as
@@ -7,7 +7,7 @@
  * sanctioned way to show a live value. It guarantees a bound value is refreshed
  * (a) the instant its page becomes visible, (b) periodically while visible
  * within a declared max-staleness, and (c) promptly when a declared source
- * changes — and it renders a value whose source cannot be evaluated as an
+ * changes, and it renders a value whose source cannot be evaluated as an
  * explicit UNKNOWN, never as its confident last-known number.
  *
  * This header is deliberately LVGL-free so the engine and every producer are
@@ -21,14 +21,14 @@
 #include <stdint.h>
 
 /* The mark shown when a value's source cannot be evaluated (em dash). The LVGL
- * layer additionally dims the widget. Public so the label wrapper and tests can
+ * layer also dims the widget. Public so the label wrapper and tests can
  * reference the same literal. */
 #define WARDEN_FRESH_UNKNOWN_MARK "\xE2\x80\x94"
 
 /* What a producer reports after being asked to produce the current value. */
 typedef enum {
     FRESH_OK = 0,   /* wrote the current value into buf                     */
-    FRESH_UNKNOWN,  /* source unavailable — no value can be produced now    */
+    FRESH_UNKNOWN,  /* source unavailable: no value can be produced now     */
     FRESH_SAME,     /* source read fine; value unchanged (cheap re-render)  */
 } warden_fresh_result_t;
 
@@ -40,11 +40,11 @@ typedef warden_fresh_result_t (*warden_fresh_produce_cb)(char *buf, size_t n,
 /* What the engine decided the widget should show this cycle. */
 typedef enum {
     FRESH_RENDER_VALUE = 0, /* show the produced/last-good value */
-    FRESH_RENDER_UNKNOWN,   /* show the explicit-unknown mark ("—", dimmed) */
+    FRESH_RENDER_UNKNOWN,   /* show the explicit-unknown mark (an em dash, dimmed) */
     FRESH_RENDER_NOCHANGE,  /* leave the widget exactly as it is */
 } warden_fresh_render_t;
 
-/* The one pure decision at the heart of the contract — no state, no I/O, no
+/* The one pure decision at the heart of the contract: no state, no I/O, no
  * LVGL, so every branch is unit-testable. `showing_unknown` is whether the
  * widget is currently displaying the UNKNOWN mark (so recovery from a stale
  * blip re-renders the value even when the producer reports it unchanged). */
@@ -80,13 +80,13 @@ void warden_fresh_tick(uint32_t now_ms);
 /* A producer of change fired: refresh every visible value bound to `source`. */
 void warden_fresh_invalidate(const char *source, uint32_t now_ms);
 
-/* Drop all bindings — called on a theme/screen rebuild, like the screen timers. */
+/* Drop all bindings: called on a theme/screen rebuild, like the screen timers. */
 void warden_fresh_reset(void);
 
 /* Number of live bindings (introspection / tests). */
 uint32_t warden_fresh_count(void);
 
-/* Smallest max_stale_ms among visible bindings, or 0 if none — lets the LVGL
+/* Smallest max_stale_ms among visible bindings, or 0 if none: lets the LVGL
  * layer size the shared tick to the tightest budget actually on screen. */
 uint32_t warden_fresh_min_budget_ms(void);
 

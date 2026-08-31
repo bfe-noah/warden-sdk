@@ -1,5 +1,5 @@
 /*
- * The UI Freshness Contract engine (flare-edge ADR-0004) — core, LVGL-free.
+ * The UI Freshness Contract engine (flare-edge ADR-0004): core, LVGL-free.
  * See freshness.h for the contract. LVGL binding lives in freshness_lv.c.
  */
 #include "freshness.h"
@@ -13,7 +13,7 @@
 
 /* Max simultaneous live bindings. Bindings belong to visible pages; the whole
  * navigable set of a screen is small, so this is generous. A full table drops
- * the binding (returns NULL) rather than silently overflowing — the LVGL layer
+ * the binding (returns NULL) rather than silently overflowing: the LVGL layer
  * turns that into a visible fault, never a stale value. */
 #ifndef FRESH_MAX
 #define FRESH_MAX 96
@@ -40,7 +40,7 @@ struct warden_fresh {
 /* A fixed table scanned in full: bindings are torn down all at once by
  * warden_fresh_reset (like the screen timers), never individually, so a running
  * high-water bound would only hide the free-slot arms from tests without saving
- * real work — the visible set per screen is a handful. */
+ * real work: the visible set per screen is a handful. */
 static struct warden_fresh s_vals[FRESH_MAX];
 
 warden_fresh_render_t warden_fresh_decide(warden_fresh_result_t produced,
@@ -122,7 +122,7 @@ warden_fresh_t *warden_fresh_bind(void *page, warden_fresh_produce_cb produce,
         v->used = true;
         return v;
     }
-    return NULL; /* table full — caller surfaces a fault, never a stale value */
+    return NULL; /* table full: caller surfaces a fault, never a stale value */
 }
 
 void warden_fresh_set_visible(void *page, bool visible)
@@ -175,7 +175,7 @@ uint32_t warden_fresh_count(void)
 
 uint32_t warden_fresh_min_budget_ms(void)
 {
-    /* `seen` — not `best == 0` — marks "nothing scanned yet", so a legitimate
+    /* `seen` (not `best == 0`) marks "nothing scanned yet", so a legitimate
      * zero-tolerance binding (max_stale_ms == 0, "must be fresh every tick") wins
      * the minimum instead of being mistaken for the empty sentinel and widened. */
     uint32_t best = 0;

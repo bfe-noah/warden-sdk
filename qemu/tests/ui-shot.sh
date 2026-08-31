@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Display + touch scenario: boot the VM headless with virtio-gpu, wait for the
 # LVGL UI (fbdev build) to render a real frame, then inject an absolute touch
-# tap on the Metrics tab (virtio-tablet) and ASSERT the frame changed — the
+# tap on the Metrics tab (virtio-tablet) and ASSERT the frame changed: the
 # device-level analogue of flare-edge's Xvfb/xdotool sim-test.sh. Readiness is
 # polled from screendumps on bounded deadlines, never guessed with fixed
 # sleeps: TCG renders CPU-bound and a loaded host can be arbitrarily slow.
@@ -17,15 +17,15 @@ QDIR="$(cd "$HERE/.." && pwd)"                           # qemu/
 ZIMAGE="${1:-}"
 OUTDIR="${2:-$QDIR/out}"
 if [ -z "$ZIMAGE" ] || [ ! -f "$ZIMAGE" ]; then
-  echo "FATAL: usage: $0 <zImage> [out-dir] — the virt.fragment kernel variant" >&2
+  echo "FATAL: usage: $0 <zImage> [out-dir]: the virt.fragment kernel variant" >&2
   exit 1
 fi
 [ -x "$QDIR/payload/warden-ui" ] || {
-  echo "FATAL: no qemu/payload/warden-ui — build it with flare-edge tools/build-ui-vm.sh" >&2
+  echo "FATAL: no qemu/payload/warden-ui: build it with flare-edge tools/build-ui-vm.sh" >&2
   exit 1
 }
 command -v qemu-system-arm >/dev/null || {
-  echo "FATAL: qemu-system-arm not on PATH — see qemu/README.md" >&2
+  echo "FATAL: qemu-system-arm not on PATH: see qemu/README.md" >&2
   exit 1
 }
 
@@ -41,7 +41,7 @@ trap cleanup EXIT
 bash "$QDIR/mkinitramfs.sh"
 bash "$QDIR/mkimage.sh"
 
-# Random hostfwd ports can collide — detect qemu's early bind failure and
+# Random hostfwd ports can collide. Detect qemu's early bind failure and
 # retry with a fresh base rather than failing spuriously.
 for _attempt in 1 2 3; do
   PORT=$((21000 + RANDOM % 20000))
@@ -53,7 +53,7 @@ for _attempt in 1 2 3; do
   sleep 3
   kill -0 "$QEMU_PID" 2>/dev/null && break
   if grep -aq 'Could not set up host forwarding' "$WORK/console.log"; then
-    echo "== hostfwd port collision on base $PORT — retrying"
+    echo "== hostfwd port collision on base $PORT, retrying"
     QEMU_PID=""
     continue
   fi
@@ -96,7 +96,7 @@ EOF
 
 # The VM can die mid-poll (OOM, crash): check liveness before every QMP
 # call so the failure is OUR message + console evidence, not a python
-# traceback — and preserve the console log before the trap removes $WORK.
+# traceback, and preserve the console log before the trap removes $WORK.
 vm_alive_or_die() {
   kill -0 "$QEMU_PID" 2>/dev/null && return 0
   echo "FATAL: VM exited during the screendump poll" >&2
@@ -121,7 +121,7 @@ done
 }
 
 # Tap the "Metrics" tab: pixel (373,40) of 720x720 scaled to the QMP absolute
-# range 0..32767 — switching tabs must repaint the content area. Poll for the
+# range 0..32767. Switching tabs must repaint the content area. Poll for the
 # repaint rather than guessing a delay.
 vm_alive_or_die
 qmp tap 16975 1820
@@ -142,7 +142,7 @@ cp "$WORK/shot1.ppm" "$OUTDIR/ui-shot1.ppm"
 cp "$WORK/shot2.ppm" "$OUTDIR/ui-shot2.ppm" 2>/dev/null || true
 
 [ "$changed" = 1 ] || {
-  echo "FATAL: tapping the Metrics tab did not change the frame within 90s — touch is not reaching the UI" >&2
+  echo "FATAL: tapping the Metrics tab did not change the frame within 90s: touch is not reaching the UI" >&2
   cp "$WORK/console.log" "$OUTDIR/ui-shot-console.log" || true
   exit 1
 }

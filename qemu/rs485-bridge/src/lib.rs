@@ -4,8 +4,8 @@
 //! what it believes is /dev/ttyS4); this bridge is the wire and every slave on
 //! it. Frames are delimited by an inter-frame gap of silence: RTU's 3.5-char
 //! rule cannot survive a socket transport, so a wall-clock gap stands in for it.
-//! A mis-split frame fails CRC inside `handle_frame`, which answers `None` —
-//! exactly a real slave staying silent — and the master already treats silence
+//! A mis-split frame fails CRC inside `handle_frame`, which answers `None`
+//! (exactly a real slave staying silent), and the master already treats silence
 //! as a timeout, so the failure mode degrades to a dropped poll, never a
 //! phantom reply.
 //!
@@ -26,7 +26,7 @@ pub const DEFAULT_GAP: Duration = Duration::from_millis(10);
 
 /// Accumulation cap: a Modbus RTU ADU is at most 256 bytes, so anything past
 /// 2x that without an inter-frame gap is a misbehaving master streaming
-/// continuously — drop the buffer instead of growing without bound.
+/// continuously. Drop the buffer instead of growing without bound.
 const MAX_PENDING: usize = 512;
 
 /// The shared bus: the slave plus its declared dimensions. The sim's register
@@ -75,11 +75,11 @@ pub fn pump_serial(
                 if buf.len() > MAX_PENDING {
                     // Rate-limit the log and back off for one gap so a master
                     // streaming continuously cannot peg a core and flood
-                    // stderr — mirroring the accept-loop backoff.
+                    // stderr, mirroring the accept-loop backoff.
                     discards += 1;
                     if discards == 1 || discards.is_multiple_of(256) {
                         eprintln!(
-                            "rs485: {} bytes buffered with no inter-frame gap — \
+                            "rs485: {} bytes buffered with no inter-frame gap, \
                              discarding (misbehaving master? {} discards so far)",
                             buf.len(),
                             discards
@@ -152,7 +152,7 @@ pub fn handle_control_line(line: &str, bus: &Bus) -> String {
         return format!("err trailing arguments after '{cmd}'");
     }
     // Each arm states its own bound (bus.regs for register space, bus.bits for
-    // bit space) INLINE — a previous string-keyed lookup defaulted silently to
+    // bit space) INLINE: a previous string-keyed lookup defaulted silently to
     // the bit bound, which would have handed a future `get-input` command the
     // wrong range and reintroduced the out-of-range panic this check prevents.
     let mut s = bus.slave.lock().unwrap();

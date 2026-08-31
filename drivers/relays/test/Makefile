@@ -1,8 +1,8 @@
 # MC/DC unit harness for drivers/relays/relays.c.
 #
-#   make check   — build, run, and FAIL unless relays.c hits 100% MC/DC
+#   make check   : build, run, and FAIL unless relays.c hits 100% MC/DC
 #                  (condition) coverage and every unit check passes.
-#   make report  — per-condition gcov annotation (build/relays.c.gcov).
+#   make report  : per-condition gcov annotation (build/relays.c.gcov).
 #   make clean
 #
 # Requires gcc >= 14 (for -fcondition-coverage) and its matching gcov.

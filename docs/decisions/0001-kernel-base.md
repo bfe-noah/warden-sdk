@@ -1,4 +1,4 @@
-# ADR 0001 — Kernel Forward-Port
+# ADR 0001: Kernel Forward-Port
 
 **Status:** Accepted (2026-08-25). Supersedes the README's original plan44/6.6 goal.
 
@@ -18,7 +18,7 @@ deltas as a reviewable patch series in `patches/`.
 - Done and **hardware-verified on `warden-c8a3`**: clk, pinctrl, eMMC, GMAC, TRNG,
   OTP, SARADC/TSADC, RTC, USB host, PWM/backlight, VOP display, GT911 touch, AIC8800
   wifi, RGA, I2S audio, HPMCU mailbox, open NPU driver, PVTM.
-- **uClibc stays load-bearing** — RGA/MPP/ISP/NPU userspace ship as uClibc-only
+- **uClibc stays required**: RGA/MPP/ISP/NPU userspace ship as uClibc-only
   blobs; a glibc swap breaks media (flare-edge #51, wontfix). Any kernel bump
   inherits this.
 - Kernel bumps risk struct-ABI breaks for out-of-tree modules (the AIC8800/VLAN

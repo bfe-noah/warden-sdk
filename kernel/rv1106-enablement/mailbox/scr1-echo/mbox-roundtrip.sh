@@ -1,6 +1,6 @@
 #!/bin/sh
 # Prove the A7<->HPMCU mailbox round-trip on channel 0. Write A2B_CMD first, then
-# A2B_DAT — the A2B_DAT write is the doorbell (raises A2B_STATUS on the MCU side,
+# A2B_DAT: the A2B_DAT write is the doorbell (raises A2B_STATUS on the MCU side,
 # whose echo firmware has enabled A2B_INTEN), so both CMD and DAT are current when
 # the SCR1 reads them. The SCR1 echoes {cmd,dat} verbatim into B2A_CMD/B2A_DAT.
 CMD=${1:-0x00001234}

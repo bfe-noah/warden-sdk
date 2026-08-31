@@ -20,7 +20,7 @@
  * watchdog SRAM mailbox relies on).
  *
  * Loaded + started by the proven flared/hpmcu.rs SRAM sequence
- * (0xFF6FE000 load addr, CORECRU reset hold/release) — NOT the 0x40000
+ * (0xFF6FE000 load addr, CORECRU reset hold/release), NOT the 0x40000
  * boot-load path (that bricks a non-TB board; see boot-loaded-mcu-0x40000
  * hazard). Fits the 8K hpmcu_sram budget (this is a few hundred bytes).
  */
@@ -29,7 +29,7 @@
 
 #define REG32(a)	(*(volatile uint32_t *)(uintptr_t)(a))
 
-/* Mailbox IP (HPMCU-connected instance) — offsets match rockchip-mailbox.c. */
+/* Mailbox IP (HPMCU-connected instance): offsets match rockchip-mailbox.c. */
 #define MBOX_BASE	0xFF5C0000u
 #define A2B_INTEN	REG32(MBOX_BASE + 0x00)
 #define A2B_STATUS	REG32(MBOX_BASE + 0x04)

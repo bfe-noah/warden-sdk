@@ -1,4 +1,4 @@
-# arch-timer / vDSO clock fix — plan (issue #3)
+# arch-timer / vDSO clock fix: plan (issue #3)
 
 Status: DIAGNOSED off-board, fix gated on two bench measurements.
 
@@ -9,7 +9,7 @@ The same kernel family under `qemu-system-arm -M virt` gives musl
 measurement, `qemu/tests/clockprobe`). The generic 6.18 armv7 vDSO is
 therefore CORRECT; the board symptom (musl reads ~12% high, kernel time
 right) is RV1106-specific. The boot chain runs in the secure world and is
-closed rkbin — the NS view of the CPU timer registers (CNTFRQ, CNTVOFF) is
+closed rkbin: the NS view of the CPU timer registers (CNTFRQ, CNTVOFF) is
 whatever it left behind, and only the arch-counter path (vDSO,
 `arch_sys_counter`) trusts them.
 
@@ -28,14 +28,14 @@ distinguish these.)
 
 ## The fix (both cases, one DT override)
 
-Append to the BOARD dts (`rv1106-warden.dts` — never the vendor dtsi) an
+Append to the BOARD dts (`rv1106-warden.dts`, never the vendor dtsi) an
 override on the armv7-timer node:
 
     arm,cpu-registers-not-fw-configured;
     clock-frequency = <MEASURED_HZ>;
 
 The property makes the driver use the physical counter, ignore CNTVOFF, and
-take the frequency from DT — the documented remedy for firmware that does
+take the frequency from DT: the documented remedy for firmware that does
 not configure the CPU timer registers. `MEASURED_HZ` comes from bench
 answer 1 (do NOT guess; a wrong value makes every clock wrong instead of
 one path). Ship as an update to the arch/dts patch in `patches/`.
@@ -50,5 +50,5 @@ one path). Ship as an update to the arch/dts patch in `patches/`.
 ## Bench access note
 
 2026-08-30: c8a3 is physically dark (CP2102 console silent through two
-remote power cycles; both network paths down) — needs hands at the bench
+remote power cycles; both network paths down), needs hands at the bench
 before the measurements can run.

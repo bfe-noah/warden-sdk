@@ -3,12 +3,12 @@
 # AICSemi AIC8800DC SDIO WiFi+BT driver (WardenOS M5 port).
 #
 # Ported from the vendor 5.10.160 out-of-tree source
-# (flare-edge/sdk/sysdrv/drv_ko/wifi/aic8800dc/) — see
+# (flare-edge/sdk/sysdrv/drv_ko/wifi/aic8800dc/), see
 # warden-sdk/kernel/rv1106-enablement/wifi/PORT-PLAN.md and PORT-PROGRESS.md.
 # Modules (=m), loaded late by /oem/usr/ko/insmod_wifi.sh: the AIC8800 SDIO
 # bring-up is two-stage (bsp downloads firmware, chip re-enumerates, fdrv
 # attaches). Built-in device_initcalls run BEFORE the dw_mmc/SDIO controller
-# probes — initcalls are sequential, so aicbsp_init blocks [3.3-7.5]s while the
+# probes: initcalls are sequential, so aicbsp_init blocks [3.3-7.5]s while the
 # mmc controller only probes at [7.9]s afterward, and the eager bring-up
 # deadlocks (it waits for a card the blocked mmc probe hasn't enumerated).
 # Late module load, after the mmc-pwrseq enumerates the card, is the
@@ -28,7 +28,7 @@ config AIC_FW_PATH
 	default "/oem/usr/ko/aic8800dc_fw"
 	help
 	  Path to the firmware & config files. The driver reads these
-	  directly (not via request_firmware()) — see PORT-PLAN.md §3.8.
+	  directly (not via request_firmware()), see PORT-PLAN.md section 3.8.
 
 if AIC_WLAN_SUPPORT
 source "drivers/net/wireless/aic8800/aic8800_fdrv/Kconfig"

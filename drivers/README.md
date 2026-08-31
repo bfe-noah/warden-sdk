@@ -2,10 +2,10 @@
 
 Per **ADR-0002** (tiered MC/DC) and **ADR-0005** (source-of-truth), our own
 hardware-facing code migrates here behind a HAL seam and is hardened. "100% MC/DC on
-100% of drivers" is infeasible (≈97% of kernel-driver LOC is vendor blobs — AIC8800
+100% of drivers" is infeasible (~97% of kernel-driver LOC is vendor blobs; AIC8800
 alone is 88.5K lines); the realistic, honest target is tiered.
 
-## Tier 1 — 100% MC/DC
+## Tier 1: 100% MC/DC
 
 Self-contained logic with a clean seam, measured to **100% MC/DC** (gcc-14
 `-fcondition-coverage`) by the CI `mcdc` job (`make -C drivers/*/test check`):
@@ -18,12 +18,12 @@ Self-contained logic with a clean seam, measured to **100% MC/DC** (gcc-14
 **Adding a Tier-1 driver:** copy `<name>.{c,h}` here, put the hardware/OS calls behind
 a small injectable seam, then mirror `relays/test/` (a fake backend for the logic
 branches + a real backend over a scratch tree for the plumbing). Reuse the shared
-gate — the Makefile calls `bash ../../enforce-mcdc.sh <gcov.log> build/<name>.c.gcov
+gate: the Makefile calls `bash ../../enforce-mcdc.sh <gcov.log> build/<name>.c.gcov
 build/test.rc` (it derives the driver name from the `.gcov` file, so there is no
 per-driver copy to keep in sync). The CI `mcdc` job picks up any
 `drivers/*/test/Makefile` automatically.
 
-## Tier 2 — Fault Injection
+## Tier 2: Fault Injection
 
 Drivers too large or too vendor/UI-coupled for literal MC/DC get fault-injection,
 branch coverage, and benchmarks against the simulator instead. Their **hardware side

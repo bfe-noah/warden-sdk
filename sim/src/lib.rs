@@ -1,4 +1,4 @@
-//! warden-sim — host-side hardware simulator for WardenOS.
+//! warden-sim: host-side hardware simulator for WardenOS.
 //!
 //! Lets driver and supervisor logic run and be tested on the host, with no panel,
 //! by modelling the RV1106 hardware the vendor SDK cannot: the register/SRAM bus

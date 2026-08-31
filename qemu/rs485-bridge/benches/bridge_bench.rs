@@ -1,4 +1,4 @@
-//! Micro-benchmarks for the RS-485 bridge dispatch path — same dependency-free
+//! Micro-benchmarks for the RS-485 bridge dispatch path: same dependency-free
 //! fixed-iteration pattern as sim/benches/sim_bench.rs: human timings to
 //! stdout, one JSON line per benchmark to stderr for CI trend capture.
 //!

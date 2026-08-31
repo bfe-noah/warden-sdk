@@ -1,13 +1,13 @@
-//! NPU load model — the `/proc/rknpu/load` surface.
+//! NPU load model: the `/proc/rknpu/load` surface.
 //!
 //! The rknpu driver exposes utilisation at `/proc/rknpu/load` as `"NPU load:  N%"`,
-//! and the file exists only once `rknpu.ko` is loaded — so a *missing* file means
+//! and the file exists only once `rknpu.ko` is loaded, so a *missing* file means
 //! the driver is absent, not idle (sysmon reports absent as 0 and labels the
 //! screen). This models both a present NPU at a chosen load and an absent one, and
 //! mirrors sysmon's parse (`strchr(buf, ':')` then the leading integer) so the
 //! driver's reader can be exercised against realistic text.
 //!
-//! (Only `/proc/rknpu/load` is modelled. `/proc/rknpu/volt` is deliberately NOT —
+//! (Only `/proc/rknpu/load` is modelled. `/proc/rknpu/volt` is deliberately NOT:
 //! reading it SIGSEGVs the reader on this board, so no code should ever open it.)
 
 /// A modelled NPU. `present == false` models rknpu.ko not loaded (no proc file).

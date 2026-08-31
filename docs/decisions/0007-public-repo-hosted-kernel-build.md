@@ -1,4 +1,4 @@
-# ADR 0007 — Hosted-Only CI
+# ADR 0007: Hosted-Only CI
 
 **Status:** Accepted (2026-08-30). Supersedes the runner half of ADR-0004.
 
@@ -8,7 +8,7 @@ alignment with the stack philosophy). Two facts change the ADR-0004 calculus:
 
 1. **A self-hosted runner on a public repo is a standing hazard.** A fork PR
    can modify workflow files; once any run of theirs is approved, workflows
-   can target the repo's registered self-hosted runners — i.e. arbitrary code
+   can target the repo's registered self-hosted runners, i.e. arbitrary code
    on the private host, which also serves production. GitHub's own guidance is
    to never attach self-hosted runners to public repos, and personal-account
    repos have no runner groups to scope the risk away.

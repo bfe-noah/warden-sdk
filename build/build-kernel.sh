@@ -26,8 +26,8 @@
 #                    Module.symvers, so per-dir M= builds cannot link) and
 #                    collects the listed dirs' modules into $WORK/modules-out.
 #
-# Requires: `python` (not python3) on PATH — the SDK quirk; the CI runner provides
-# a project-local venv. Builds are SERIAL on the shared SDK box — never run two.
+# Requires: `python` (not python3) on PATH: the SDK quirk; the CI runner provides
+# a project-local venv. Builds are SERIAL on the shared SDK box: never run two.
 set -euo pipefail
 
 KVER=6.18.46
@@ -51,7 +51,7 @@ trap '[ "${WORK_OWNED:-0}" = 1 ] && rm -rf "$WORK"' EXIT
 
 log() { printf '\033[36m== %s\033[0m\n' "$*"; }
 
-command -v python >/dev/null || { echo "need 'python' (not python3) on PATH — SDK quirk" >&2; exit 1; }
+command -v python >/dev/null || { echo "need 'python' (not python3) on PATH: SDK quirk" >&2; exit 1; }
 
 # 1. obtain + verify the pristine tarball
 mkdir -p "$WORK"
@@ -66,7 +66,7 @@ rm -rf "$SRC"
 log "extracting pristine"
 tar -C "$WORK" -xf "$TB"
 
-# 3. apply the patch series in order (fail loudly — never echo a lie)
+# 3. apply the patch series in order (fail loudly: never echo a lie)
 log "applying patch series"
 for p in "$PATCHES"/*.patch; do
   if git -C "$SRC" apply --whitespace=nowarn "$p" 2>/dev/null; then
@@ -89,7 +89,7 @@ SENTINEL="$SRC/arch/arm/boot/dts/rockchip/rv1106-warden.dts"
 [ -f "$SENTINEL" ] || {
   echo "FATAL: patch series did not apply (missing $SENTINEL)." >&2
   echo "       Is \$WORK inside a git repo? git apply silently ignores out-of-subdir" >&2
-  echo "       paths there — point WORK at a dir outside any checkout (e.g. \$RUNNER_TEMP)." >&2
+  echo "       paths there: point WORK at a dir outside any checkout (e.g. \$RUNNER_TEMP)." >&2
   exit 1
 }
 log "patch series applied ($(basename "$SENTINEL") present)"
@@ -98,7 +98,7 @@ log "patch series applied ($(basename "$SENTINEL") present)"
 log "configuring (warden_defconfig)"
 cp "$HERE/warden_defconfig" "$SRC/.config"
 # Optional kconfig fragment overlay (e.g. qemu/configs/virt.fragment for the
-# QEMU -M virt device-sim variant). Fail closed if set but unreadable — never
+# QEMU -M virt device-sim variant). Fail closed if set but unreadable: never
 # silently build the wrong kernel. Unset => the canonical RV1106 build,
 # byte-identical to a build without this hook.
 if [ -n "${WARDEN_KCONFIG_FRAGMENT:-}" ]; then
@@ -112,7 +112,7 @@ if [ -n "${WARDEN_KCONFIG_FRAGMENT:-}" ]; then
 fi
 # CROSS_COMPILE defaults to the Luckfox SDK uclibc prefix (set SDK_TC to its bin/),
 # but the kernel is freestanding, so a caller may override with a generic arm cross
-# toolchain instead — e.g. CROSS_COMPILE=arm-linux-gnueabihf- (in Debian's
+# toolchain instead: e.g. CROSS_COMPILE=arm-linux-gnueabihf- (in Debian's
 # gcc-arm-linux-gnueabihf), which the CI runner already has on PATH.
 export ARCH=arm
 export CROSS_COMPILE="${CROSS_COMPILE:-arm-rockchip830-linux-uclibcgnueabihf-}"
@@ -122,7 +122,7 @@ command -v "${CROSS_COMPILE}gcc" >/dev/null \
 make -C "$SRC" ARCH=arm CROSS_COMPILE="$CROSS_COMPILE" olddefconfig >/dev/null
 
 # Fragment took-effect assertion: merge_config -m only pastes text, and
-# olddefconfig silently resolves any symbol whose dependencies are unmet —
+# olddefconfig silently resolves any symbol whose dependencies are unmet:
 # a fragment option could be dropped without a word. Verify every explicit
 # request in the fragment survived into the final .config; fail loud if not.
 if [ -n "${WARDEN_KCONFIG_FRAGMENT:-}" ]; then
@@ -137,7 +137,7 @@ if [ -n "${WARDEN_KCONFIG_FRAGMENT:-}" ]; then
       "# CONFIG_"*" is not set")
         # A disable succeeded if the symbol is NOT set: Kconfig writes either
         # the literal "is not set" line or (when dependencies gate the symbol
-        # out) nothing at all — both are valid outcomes. Only "still =value"
+        # out) nothing at all: both are valid outcomes. Only "still =value"
         # is a failed disable. (A typo'd symbol disables nothing and is
         # harmless by construction.)
         opt="${line#\# }"; opt="${opt% is not set}"
@@ -165,13 +165,13 @@ make -C "$SRC" ARCH=arm CROSS_COMPILE="$CROSS_COMPILE" CC="$KCC" -j"$JOBS" \
 
 # Optional module set (issue #4: the panel loaded a stale 5.10 .ko because
 # this build never produced matched 6.18 modules). Full `make modules` is
-# required — zImage alone emits no Module.symvers, so a per-directory M=
+# required: zImage alone emits no Module.symvers, so a per-directory M=
 # build cannot resolve even core symbols. FAILS CLOSED if a listed dir
 # yields no modules.
 if [ -n "${WARDEN_MODULES_COLLECT:-}" ]; then
   MODOUT="$WORK/modules-out"
   rm -rf "$MODOUT"; mkdir -p "$MODOUT"
-  log "building modules (full set — needed for Module.symvers)"
+  log "building modules (full set: needed for Module.symvers)"
   make -C "$SRC" ARCH=arm CROSS_COMPILE="$CROSS_COMPILE" CC="$KCC" -j"$JOBS" modules
   for d in $WARDEN_MODULES_COLLECT; do
     [ -d "$SRC/$d" ] || { echo "FATAL: WARDEN_MODULES_COLLECT dir '$d' not in tree" >&2; exit 1; }

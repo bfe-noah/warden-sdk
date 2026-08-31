@@ -1,4 +1,4 @@
-# QEMU -M virt kernel variant — merged onto build/warden_defconfig via
+# QEMU -M virt kernel variant, merged onto build/warden_defconfig via
 # WARDEN_KCONFIG_FRAGMENT (see build/build-kernel.sh). The RV1106 zImage stays
 # canonical and byte-identical when the variable is unset.
 #
@@ -18,7 +18,7 @@ CONFIG_PCI_HOST_GENERIC=y
 # shows up as ttyS0; stage-2 init aliases it to the device's /dev/ttyS4).
 CONFIG_SERIAL_8250_PCI=y
 
-# /dev/watchdog for flared's watchdog_loop() — untestable on both existing
+# /dev/watchdog for flared's watchdog_loop(), untestable on both existing
 # sims. i6300esb is the watchdog QEMU offers on arm virt (PCI device):
 # -device i6300esb -action watchdog=reset.
 CONFIG_WATCHDOG=y
@@ -28,7 +28,7 @@ CONFIG_I6300ESB_WDT=y
 CONFIG_WIREGUARD=y
 
 # Display + touch: virtio-gpu scanout with fbdev emulation (the VM UI build
-# uses LVGL's fbdev backend — no libdrm needed in the guest), virtio-tablet
+# uses LVGL's fbdev backend; no libdrm needed in the guest), virtio-tablet
 # for absolute-coordinate touch injection via QMP.
 CONFIG_FB=y
 CONFIG_DRM_VIRTIO_GPU=y

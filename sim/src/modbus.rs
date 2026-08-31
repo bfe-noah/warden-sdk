@@ -1,16 +1,16 @@
-//! Modbus RTU **slave** simulator — the device end of the RS-485 seam.
+//! Modbus RTU **slave** simulator: the device end of the RS-485 seam.
 //!
 //! flare-edge's `warden-modbus` is the *master/scanner*: it probes RS-485 for
 //! VFDs and PDUs, identifies them, and reads their register maps. To harden that
 //! master to MC/DC we need something for it to talk to that behaves like a real
-//! slave — correct CRC framing, the data-plane function codes, exception replies,
+//! slave: correct CRC framing, the data-plane function codes, exception replies,
 //! and the annoying real-world faults (a cheap sensor that ignores a function, a
 //! device that NAKs an unsupported code). This is that slave, in host memory:
 //! feed it a request frame, get the response frame (or `None` when a real slave
 //! would stay silent). No serial port, no hardware, fully deterministic.
 //!
-//! Scope is the data plane — read/write of holding & input registers, coils, and
-//! discrete inputs (FC 0x01–0x06, 0x0F, 0x10) plus Report Slave ID (0x11) — which
+//! Scope is the data plane: read/write of holding & input registers, coils, and
+//! discrete inputs (FC 0x01-0x06, 0x0F, 0x10) plus Report Slave ID (0x11), which
 //! is what a VFD/PDU register poll actually exercises. Identification via MEI
 //! (0x2B/0x0E) is a documented follow-up.
 
@@ -22,7 +22,7 @@ pub mod exc {
 }
 
 /// Modbus RTU CRC16 (poly 0xA001, low byte first on the wire). Identical to the
-/// master's `crc16` — the two must agree or nothing frames.
+/// master's `crc16`: the two must agree or nothing frames.
 pub fn crc16(bytes: &[u8]) -> u16 {
     let mut crc: u16 = 0xFFFF;
     for &b in bytes {
@@ -63,7 +63,7 @@ pub struct ModbusSlave {
     discrete: Vec<bool>,
     slave_id: Vec<u8>,
     /// Silently drop this many upcoming requests (models a device that ignores a
-    /// function, or a flaky bus) — the master must time out and move on.
+    /// function, or a flaky bus): the master must time out and move on.
     drop_next: usize,
     /// Force every function to answer with this exception (models a device that
     /// NAKs everything but a narrow set) until cleared.
@@ -303,7 +303,7 @@ impl ModbusSlave {
     }
 }
 
-/// Build an RTU request frame (with CRC) — convenience for tests and for driving
+/// Build an RTU request frame (with CRC): convenience for tests and for driving
 /// the master's parser. `pdu` is everything between the address and the CRC
 /// (i.e. `fc` followed by its data).
 pub fn request(address: u8, pdu: &[u8]) -> Vec<u8> {
@@ -408,7 +408,7 @@ mod tests {
     }
 
     /// A device that ignores the next request (the "cheap sensor" the master
-    /// comment warns about) — the master must fall through to the next function.
+    /// comment warns about): the master must fall through to the next function.
     #[test]
     fn drop_next_models_a_silent_device() {
         let mut s = ModbusSlave::new(1, 8, 0);

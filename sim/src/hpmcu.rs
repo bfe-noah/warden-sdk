@@ -2,11 +2,11 @@
 //!
 //! A faithful software port of `flare-edge/hpmcu/watchdog/main.c`'s poll loop:
 //! it reads the Linux-owned mailbox words (magic + heartbeat counter), writes the
-//! MCU-owned state word, and fires (records a CRU reset) on the same deadlines —
+//! MCU-owned state word, and fires (records a CRU reset) on the same deadlines:
 //! boot-grace if userspace never arms it, heartbeat-timeout if a live heartbeat
 //! stops. Because it runs on a [`MemBus`], the *same* flared arm/beat protocol can
 //! be driven against it in a host unit test, with a virtual clock, in
-//! microseconds — the validation that was missing when a boot-loaded build of this
+//! microseconds: the validation that was missing when a boot-loaded build of this
 //! firmware had to be tested by flashing a panel.
 //!
 //! Deadlines are modelled in whole seconds (the firmware's cycle math exists only
@@ -215,7 +215,7 @@ mod tests {
     fn flared_arms_within_boot_grace_no_boot_loop() {
         // The exact safety property the boot-loaded watchdog needs: on a healthy
         // boot, flared comes up well before the 300s boot grace, arms the MCU, and
-        // keeps beating — so it transitions BOOT -> ARMED and never fires. (A
+        // keeps beating, so it transitions BOOT -> ARMED and never fires. (A
         // failure here would be the boot-loop we must never ship.)
         let bus = SimBus::new();
         let mut m = mcu(&bus);
@@ -247,7 +247,7 @@ mod tests {
         let bus = SimBus::new();
         let mut m = mcu(&bus);
         let mut counter = 0u32;
-        // Beat through t=600 (inclusive) — the last heartbeat lands at 600s.
+        // Beat through t=600 (inclusive): the last heartbeat lands at 600s.
         for now in (0..=600).step_by(5) {
             counter += 1;
             arm_beat(&bus, counter);

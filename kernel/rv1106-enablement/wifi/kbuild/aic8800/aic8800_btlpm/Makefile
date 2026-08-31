@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-only
 #
-# aic8800_btlpm — Bluetooth low-power-mode / HCI wake companion module,
+# aic8800_btlpm: Bluetooth low-power-mode / HCI wake companion module,
 # ported in-tree from the vendor out-of-tree Makefile
 # (flare-edge/sdk/sysdrv/drv_ko/wifi/aic8800dc/aic8800_btlpm/Makefile).
 # lpm.c stays out of the build (CONFIG_SUPPORT_LPM was already off in the

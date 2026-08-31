@@ -1,17 +1,17 @@
 # SPDX-License-Identifier: GPL-2.0-only
 #
-# aic8800_fdrv — the cfg80211 full-MAC driver ("fdrv"), ported in-tree from
+# aic8800_fdrv: the cfg80211 full-MAC driver ("fdrv"), ported in-tree from
 # the vendor out-of-tree Makefile (flare-edge/sdk/sysdrv/drv_ko/wifi/
 # aic8800dc/aic8800_fdrv/Makefile). SDIO-only build (this board has no
-# USB/PCI variant) — usb_host.c and rwnx_pci.c are dropped from the tree
-# entirely (PORT-PLAN.md §4.1 flagged both as candidates to drop "unless a
-# build error proves them referenced elsewhere" — that held for these two).
+# USB/PCI variant): usb_host.c and rwnx_pci.c are dropped from the tree
+# entirely (PORT-PLAN.md section 4.1 flagged both as candidates to drop "unless a
+# build error proves them referenced elsewhere", that held for these two).
 # rwnx_mesh.c was ALSO dropped initially on the same theory but had to be
 # restored: rwnx_tx.c's NL80211_IFTYPE_MESH_POINT switch-case is not
 # preprocessor-gated, so rwnx_mesh.h's types/prototypes are needed to
 # compile even though this board never creates a mesh-type interface.
 # md5.o: fdrv carries its OWN copy (vendor ships md5.c in both aic8800_bsp/ and
-# aic8800_fdrv/). As separate modules each .ko needs its own MD5 — bsp does not
+# aic8800_fdrv/). As separate modules each .ko needs its own MD5: bsp does not
 # EXPORT_SYMBOL(MD5Init/...), so fdrv.ko cannot resolve them from aic8800_bsp.ko
 # (modpost: "MD5Final undefined"). The two copies are byte-identical and live in
 # separate module namespaces, so there is no collision. (When these were briefly

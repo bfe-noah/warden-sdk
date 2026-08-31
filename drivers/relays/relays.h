@@ -35,7 +35,7 @@ bool warden_relay_get(uint32_t idx);
 /** Drive the output. Exports and sets the direction on first use. */
 void warden_relay_set(uint32_t idx, bool on);
 
-/** True if the GPIO is exported and usable — the page says so if it is not. */
+/** True if the GPIO is exported and usable: the page says so if it is not. */
 bool warden_relay_available(uint32_t idx);
 
 /* --- Hardware-abstraction seam ---------------------------------------------

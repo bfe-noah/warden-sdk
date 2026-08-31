@@ -2,7 +2,7 @@
 # shellcheck shell=dash
 # WardenOS QEMU device sim: initramfs /init (PID 1).
 #
-# Phase-1 duty: prove the kernel booted on -M virt — print the sentinel the
+# Phase-1 duty: prove the kernel booted on -M virt; print the sentinel the
 # smoke test greps for, then power off (PSCI SYSTEM_OFF, so qemu exits).
 # `warden.shell` on the kernel cmdline drops to an interactive shell instead.
 
@@ -19,7 +19,7 @@ mount -t sysfs sysfs /sys
 echo "WARDEN-QEMU-BOOT-OK"
 
 # With a virtio disk attached, hand over to the stage-1 rc (by-name symlinks,
-# slot select, switch_root). It only returns on failure — then fall through to
+# slot select, switch_root). It only returns on failure; then fall through to
 # the diskless shell/poweroff behavior below.
 if [ -b /dev/vda ]; then
     # shellcheck source=qemu/rootfs/etc/rc disable=SC1091

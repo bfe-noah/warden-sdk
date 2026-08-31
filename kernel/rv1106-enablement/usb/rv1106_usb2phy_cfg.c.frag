@@ -1,7 +1,7 @@
  * RV1106 USB2 PHY: single OTG port at 0xff3e0000 (ported from the vendor driver;
  * fields map 1:1 to 6.18 except utmi_iddig -> utmi_id, and the 5.10-only
  * iddig_output/iddig_en/bvalid_grf_sel are dropped). Signal-quality phy_tuning is
- * left off for now (guarded, so NULL is safe) — the phy is functional without it.
+ * left off for now (guarded, so NULL is safe): the phy is functional without it.
  */
 static const struct rockchip_usb2phy_cfg rv1106_phy_cfgs[] = {
 	{

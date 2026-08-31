@@ -14,7 +14,7 @@
 FW=${1:-/userdata/echo-fw-words.txt}
 
 # GRF uncached peripheral window (covers CRU + this SRAM + the mailbox
-# 0xff5c0000) — WITHOUT this the MCU's peripheral/SRAM accesses are cached and
+# 0xff5c0000): WITHOUT this the MCU's peripheral/SRAM accesses are cached and
 # invisible to Linux. hpmcu.rs: GRF_BASE 0xff040000 +0x24/+0x28 = 0xff000/0xffc00.
 devmem 0xff040024 32 0xff000
 devmem 0xff040028 32 0xffc00

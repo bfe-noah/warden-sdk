@@ -1,6 +1,6 @@
 /* MC/DC harness for drivers/freshness/freshness.c (built with -DFRESH_MAX=2).
  *
- * freshness.c is pure logic with produce/render callbacks — no hardware seam
+ * freshness.c is pure logic with produce/render callbacks: no hardware seam
  * needed, the callbacks ARE the seam. We drive the decision function directly and
  * the bind/tick/invalidate state machine through programmable fakes, covering
  * every decision (incl. the compound `used && visible`, `!produce || !render`,
@@ -45,7 +45,7 @@ static void test_decide(void) {
     EXPECT(warden_fresh_decide(FRESH_UNKNOWN, true,  false, 200, 100) == FRESH_RENDER_UNKNOWN);
     EXPECT(warden_fresh_decide(FRESH_UNKNOWN, true,  false, 50,  100) == FRESH_RENDER_NOCHANGE);
     /* boundary: age == max_stale is NOT stale (guards a `>`->`>=` regression that
-     * MC/DC alone would not catch — both outcomes are already covered above). */
+     * MC/DC alone would not catch: both outcomes are already covered above). */
     EXPECT(warden_fresh_decide(FRESH_UNKNOWN, true,  false, 100, 100) == FRESH_RENDER_NOCHANGE);
 }
 

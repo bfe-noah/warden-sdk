@@ -2,7 +2,7 @@
 
 > **Outcome tested:** The UI never shows a stale number: it holds briefly, then marks unknown.
 
-**Coverage**: freshness.c — 66/66 conditions, 100% MC/DC (CI-enforced)
+**Coverage**: freshness.c: 66/66 conditions, 100% MC/DC (CI-enforced)
 
 ```mermaid
 flowchart TD

@@ -3,7 +3,7 @@
  * WardenOS 86-Panel board DT for the self-built Linux 6.18 forward-port.
  *
  * Includes the full vendor rv1106.dtsi (SoC nodes + pinctrl + gpio + dmac), then
- * enables only what our wall-HMI needs — no camera/ISP/CSI. Grows one driver
+ * enables only what our wall-HMI needs: no camera/ISP/CSI. Grows one driver
  * batch at a time toward full parity with the 5.10 kernel (DRIVER-PARITY.md).
  */
 /dts-v1/;
@@ -31,7 +31,7 @@
 		reset-gpios = <&gpio1 RK_PA2 GPIO_ACTIVE_LOW>;
 	};
 
-	/* SARADC voltage reference (1.8V) — the driver reads this for scale;
+	/* SARADC voltage reference (1.8V): the driver reads this for scale;
 	   without it saradc probes -22 (regulator_get_voltage on the dummy). */
 	vcc_1v8: vcc-1v8 {
 		compatible = "regulator-fixed";
@@ -57,7 +57,7 @@
 	status = "okay";
 };
 
-/* --- M5: AIC8800DC wifi/BT SDIO (on &sdmmc, mmc@ffaa0000 — NOT &sdio) --- */
+/* --- M5: AIC8800DC wifi/BT SDIO (on &sdmmc, mmc@ffaa0000; NOT &sdio) --- */
 &sdmmc {
 	max-frequency = <50000000>;
 	bus-width = <4>;
@@ -95,7 +95,7 @@
 	status = "okay";
 };
 
-/* --- M4: display (VOP + RGB → 720x720 panel + PWM backlight) --- */
+/* --- M4: display (VOP + RGB -> 720x720 panel + PWM backlight) --- */
 &display_subsystem {
 	status = "okay";
 };

@@ -2,7 +2,7 @@
 # shellcheck shell=dash
 # Stage-2 init: PID 1 on the disk rootfs (rootfs_a or rootfs_b), reached via
 # switch_root from the initramfs. Brings up the minimum a WardenOS userspace
-# needs — mounts, by-name symlinks, network, serial alias — then starts any
+# needs (mounts, by-name symlinks, network, serial alias), then starts any
 # payload daemons and holds. This stands in for the device's BusyBox SysV
 # /etc/init.d/S* sequence; it is deliberately tiny, not a model of it.
 
@@ -17,7 +17,7 @@ mount -t tmpfs tmpfs /tmp
 # shellcheck source=qemu/rootfs/etc/warden-lib.sh disable=SC1091
 . /etc/warden-lib.sh
 
-# Fresh devtmpfs — repopulate the by-name contract; same VALIDATED slot rule
+# Fresh devtmpfs: repopulate the by-name contract; same VALIDATED slot rule
 # as stage 1 (shared helper, so the two can never drift).
 warden_populate_by_name
 slot="$(warden_slot)"
@@ -45,7 +45,7 @@ mkdir -p /userdata/warden
 [ -c /dev/ttyS0 ] && ln -sf /dev/ttyS0 /dev/ttyS4
 
 # Network: slirp user-mode net on eth0 (DHCP, fallback to QEMU's static map).
-# The fallback keys off the interface actually having an address — udhcpc
+# The fallback keys off the interface actually having an address: udhcpc
 # exiting 0 only proves a lease, not that the hook script applied it.
 ip link set lo up
 if [ -e /sys/class/net/eth0 ]; then
@@ -64,7 +64,7 @@ echo "WARDEN-QEMU-ROOTFS-OK slot=${slot}"
 
 # Payload daemons (dropped into /usr/bin by qemu/mkimage.sh from qemu/payload/).
 # WARDEN_FLARE_INSECURE=1: the VM's portal is the desk mock over plain HTTP.
-# This is a dev instrument — a production device build never sets it.
+# This is a dev instrument: a production device build never sets it.
 export WARDEN_FLARE_INSECURE=1
 # No HPMCU on -M virt: the mailbox SRAM (0xff6fff00) is unmapped bus space
 # here, and flared's /dev/mem poke dies with an external abort (SIGBUS). The
