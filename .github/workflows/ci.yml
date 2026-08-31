@@ -191,7 +191,7 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq gcc-arm-linux-gnueabihf qemu-system-arm \
             cpio bc bison flex libssl-dev ccache
-      - name: provision `python` (SDK quirk: build calls bare python)
+      - name: provision `python` (SDK quirk, the build calls bare python)
         run: |
           mkdir -p "$RUNNER_TEMP/bin"
           ln -sf "$(command -v python3)" "$RUNNER_TEMP/bin/python"
