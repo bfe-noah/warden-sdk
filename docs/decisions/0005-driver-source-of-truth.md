@@ -9,9 +9,9 @@ currently lives in flare-edge. The kernel driver source lives in an un-versioned
 scratch tree (`flare-edge/research/linux-6.18.46/`).
 
 ## Decision
-Bring **hardened copies into `warden-sdk/drivers/`** as the canonical source-of-truth,
+Bring **hardened copies into this repo's `drivers/`** as the canonical source-of-truth,
 each with its HAL seam and a 100% MC/DC host harness. The RV1106 kernel deltas are
-formalized as a patch series in `patches/`. flare-edge consumes warden-sdk later
+formalized as a patch series in `patches/`. flare-edge consumes this repo later
 (separate, maintainer-gated step).
 
 ## Consequences

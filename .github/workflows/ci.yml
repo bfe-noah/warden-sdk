@@ -1,4 +1,4 @@
-# warden-sdk CI.
+# bfe-core1106-sdk CI.
 #
 # Policy (mirrors flare-edge): only GitHub-owned actions get the repo token; the one
 # third-party helper (taiki-e/install-action) is pinned and never handed a token.

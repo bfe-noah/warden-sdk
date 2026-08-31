@@ -67,7 +67,7 @@ supervisor logic runs in CI with no panel.
   the boot-mode register's survives-warm-reset / cleared-by-POR behaviour (the MaskRom
   recovery maneuver). The matching firmware-side `Bus` seam on flared's `devmem` — so
   the shipped ladder can be asserted to poke the confirmed offset, never the wrong-SoC
-  one — lands when flare-edge consumes warden-sdk (§8 item 3, maintainer-gated), not yet on
+  one — lands when flare-edge consumes this repo (§8 item 3, maintainer-gated), not yet on
   flare-edge `main`.
 - **`modbus` — RS-485 device end.** Done. `ModbusSlave`: a byte-in/byte-out RTU slave
   (CRC16 byte-identical to the master, FC 0x01–0x06/0x0F/0x10/0x11, exception replies,
@@ -89,7 +89,7 @@ supervisor logic runs in CI with no panel.
 
 Integration with flare-edge: flared implements `MemBus` for `/dev/mem` and gains
 `#[cfg(test)]` tests driving its real arm/beat logic against `HpmcuSim`. This needs
-warden-sdk reachable as a Cargo dependency in CI — i.e. a remote for this repo,
+this repo reachable as a Cargo dependency in CI — i.e. a remote for this repo,
 which is a **maintainer go-ahead item** (credential/remote creation). Until then the
 firmware-side seam and a local test double land in flare-edge, unified with `sim/`
 once the dependency exists. No duplication of *logic* — only the tiny trait.
@@ -124,7 +124,7 @@ The brick was a *memory-map* fault: the boot-loaded MCU's load address (`0x40000
 is a reserved carve-out on Thunder-Boot boards but plain kernel RAM on ours. No
 behavioural sim catches that — it needs a **static check against the target DT**:
 "every address the MCU/coprocessor code loads to is inside a `reserved-memory`
-node." warden-sdk owns these config-lint checks (idblock loader `.ini` vs DT
+node." This repo owns these config-lint checks (idblock loader `.ini` vs DT
 reservations, partition table vs image sizes, vermagic vs kernel) as CI gates, so a
 mistake is caught before a flash rather than on the bench.
 
@@ -187,7 +187,7 @@ memory-map faults; and "boots under emulation" is never on-silicon evidence.
 2. **C-driver MC/DC harnesses** — `relays.c` and `freshness.c` at 100% MC/DC, CI-gated
    via the shared `drivers/enforce-mcdc.sh`. **Done** (the first C coverage gate).
 3. **flared devmem/hpmcu seam + tests** — firmware-side trait, unified with `sim/`
-   once flare-edge consumes warden-sdk (a separate, maintainer-gated step). **Pending.**
+   once flare-edge consumes this repo (a separate, maintainer-gated step). **Pending.**
 4. **Config-lint CI gates** (§5) — the brick-class of bug. **Done.**
 5. **Hermetic kernel build** (`build/build-kernel.sh` + the `patches-apply` gate). **Done.**
 6. **Kernel 5.10→6.18.46 forward-port** (§6, ADR-0001). **Done** (hardware-verified).

@@ -1,6 +1,6 @@
-# warden-sdk
+# bfe-core1106-sdk
 
-[![ci](https://github.com/blueflare-energy/warden-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/blueflare-energy/warden-sdk/actions/workflows/ci.yml)
+[![ci](https://github.com/blueflare-energy/bfe-core1106-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/blueflare-energy/bfe-core1106-sdk/actions/workflows/ci.yml)
 ![Lines of code](.github/badges/loc.svg)
 ![Tests](.github/badges/tests.svg)
 ![Coverage](.github/badges/coverage.svg)
@@ -114,7 +114,7 @@ the simulators narrow which claims need a panel, they do not replace it.
 
 ## Downstream
 
-WardenOS (the 86 Panel firmware this SDK was born for) consumes warden-sdk
+WardenOS (the 86 Panel firmware this SDK was born for) consumes this repo
 from its own private repo, flare-edge; issue references and checkout paths
 pointing there are context, not reachable links. The QEMU simulator runs its
 production binaries unmodified — including real over-the-air updates against

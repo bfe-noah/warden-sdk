@@ -26,3 +26,7 @@ it.
   seam inventory, scenario payloads) but read as one consumer's usage.
 - The honesty rule is unchanged: emulation results are never on-silicon
   claims.
+- The repo is renamed **`bfe-core1106-sdk`** (2026-08-31): the name leads
+  with the org and the chip, not the product. `warden-sdk` remains as a
+  GitHub redirect; crate names (`warden-sim`, `warden-config-lint`), the
+  `WARDEN_*` env vars, and binary names are unchanged.
