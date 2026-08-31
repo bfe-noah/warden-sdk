@@ -12,7 +12,7 @@ registration cannot be shared across repos by label alone.
 
 ## Decision
 Register a **third repo-scoped runner instance** on `bfe-mpc-0640`, label
-`warden-sdk` (own systemd unit `actions.runner.bfe-noah-warden-sdk.*`, own
+`warden-sdk` (its own repo-scoped runner systemd unit, own
 `CPUQuota=400%`/`MemoryMax=6G` drop-in). Only the heavy `kernel-build` job uses
 `runs-on: [self-hosted, warden-sdk]`; all host-testable jobs (tests, coverage, MC/DC,
 benchmarks, badges, patches-apply) run on GitHub-hosted runners.
