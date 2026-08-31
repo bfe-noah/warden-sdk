@@ -86,13 +86,6 @@ the simulators narrow which claims need a panel.
 - **Modern**: the newest kernel the hardware can run, current toolchains,
   Rust for new host-testable code, reproducible builds.
 
-## Downstream
-
-A private firmware repo (flare-edge) consumes this SDK; issue references and
-checkout paths pointing there are engineering context, not reachable links.
-The QEMU simulator runs its production binaries unmodified,
-real over-the-air updates included.
-
 ## License
 
 **GPL-2.0-only**, repo-wide (`LICENSE`; a per-file SPDX identifier governs
