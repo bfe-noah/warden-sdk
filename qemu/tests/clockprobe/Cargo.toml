@@ -1,0 +1,12 @@
+[package]
+name = "clockprobe"
+version = "0.1.0"
+edition = "2021"
+description = "Interval-based monotonic-clock rate probe: compares musl/vDSO CLOCK_MONOTONIC(+_RAW) against /proc/uptime so rate errors and boot-time offsets (CNTVOFF) separate cleanly. Diagnostic for issue #3."
+license = "GPL-2.0-only"
+
+[dependencies]
+libc = "0.2"
+
+[profile.release]
+strip = true
