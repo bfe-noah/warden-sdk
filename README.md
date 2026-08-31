@@ -100,6 +100,11 @@ Three simulators, by design not one:
 | `qemu/` | the real kernel + real userspace on `-M virt` | boot, init, daemons, networking, OTA, watchdog, display + touch |
 | `lvglsim` (downstream) | the LVGL UI on SDL | rendering and UI flows |
 
+The device simulator covers the UI as well: with the production UI binary in
+`qemu/payload/`, `run.sh --display on` opens the panel's 720x720 screen in a
+window with mouse clicks landing as touch — device and UI in one VM
+(headless + scripted: `qemu/tests/ui-shot.sh`).
+
 Boots and passes under emulation are never treated as on-silicon evidence;
 the simulators narrow which claims need a panel, they do not replace it.
 
