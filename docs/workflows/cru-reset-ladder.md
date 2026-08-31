@@ -1,8 +1,8 @@
-# CRU reset ladder: cause + boot-mode survival
+# CRU Reset Ladder
 
 > **Outcome tested:** Reset cause is attributable and the boot-mode register survives a warm reset.
 
-**Benchmark** (`cru_poll`): 23.0 ns/op
+**Benchmark** (`cru_poll`): 21.4 ns/op
 
 ```mermaid
 flowchart TD

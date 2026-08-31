@@ -1,4 +1,4 @@
-# Relay drive (Tier-1, 100% MC/DC)
+# Relay Drive
 
 > **Outcome tested:** A relay is exported transparently and driven without disturbing a held contact.
 

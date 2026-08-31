@@ -1,10 +1,12 @@
-# warden-sdk architecture
+# Architecture
 
-How the SDK makes WardenOS buildable, testable, and hardenable without a panel in
-the loop. Grounded in a full survey of the current flare-edge firmware (the seam
-inventory below is from that survey, not aspiration).
+How the SDK makes the 86 Panel buildable, testable, and hardenable without a
+board in the loop. The seam inventory below comes from a full survey of the
+downstream WardenOS firmware — the SDK's first consumer — not aspiration; the
+file paths in it point into that (private) codebase and serve as engineering
+context.
 
-## 1. The problem the seams solve
+## 1. The Problem
 
 The firmware touches RV1106 hardware through a *grab-bag* of mechanisms, each
 tested (or not) differently. Today:
@@ -26,7 +28,7 @@ socket, misc dev, cmdline, hpmcu fw), and **fails-soft-because-the-path-is-absen
 "relay 1 is ON" or "NPU at 80%", only "absent". The SDK's job is to turn all of
 these into **one deliberate seam per block** with a real backend and a sim backend.
 
-## 2. The seam taxonomy
+## 2. Seam Taxonomy
 
 Two seam kinds cover everything above:
 
@@ -47,7 +49,7 @@ backend is "a fake `improcess` that records the blits it was asked to do", swapp
 behind the same `#if`, so the offload *dispatch* logic gets tested even though the
 blit itself is modelled.
 
-## 3. The simulator (`sim/`)
+## 3. The Register Simulator
 
 A host Rust library modelling the hardware the vendor SDK cannot, so driver and
 supervisor logic runs in CI with no panel.
@@ -92,12 +94,12 @@ which is a **maintainer go-ahead item** (credential/remote creation). Until then
 firmware-side seam and a local test double land in flare-edge, unified with `sim/`
 once the dependency exists. No duplication of *logic* — only the tiny trait.
 
-## 4. Driver hardening (the "port + harden to MC/DC" goal)
+## 4. Driver Hardening
 
 "100% MC/DC on 100% of drivers" is infeasible literally: ~97% of driver LOC is
 vendor blobs (AIC8800 wifi = 88.5K lines). Tiered target:
 
-- **Tier 1 — our own hardware code → real MC/DC.** Method: the proven `tests/uboot-ab`
+- **Tier 1 — our own hardware code → real MC/DC.** Method: the proven flare-edge `tests/uboot-ab`
   pattern — extract the unit behind a small injectable seam, mock its world, build
   `-fcondition-coverage`, enforce with the shared `drivers/enforce-mcdc.sh` (gcc-14
   `gcov --conditions`) in the CI `mcdc` job. **Done here now:** `relays.c` (40/40
@@ -116,7 +118,7 @@ Every seam gets a fault-injection mode (a wedged SDIO link, a stalled MCU
 heartbeat, an RGA timeout, a GPIO write EIO) so recovery code is tested against
 failure, not just the happy path.
 
-## 5. Target-config checks (a class the sim cannot cover)
+## 5. Target-Config Checks
 
 The brick was a *memory-map* fault: the boot-loaded MCU's load address (`0x40000`)
 is a reserved carve-out on Thunder-Boot boards but plain kernel RAM on ours. No
@@ -136,7 +138,7 @@ fails against a DT with no `rtos@40000` node and passes once the reservation is
 added. **Next** target-config checks: partition-table-vs-image-size and
 vermagic-vs-kernel.
 
-## 6. Kernel forward-port (done — see ADR-0001)
+## 6. Kernel Forward-Port
 
 A self-built **Linux 6.18.46**, forward-ported directly from the vendor 5.10.160 tree
 onto our Buildroot LTS/uClibc base — **not** the plan44/OpenWrt 6.6 fork this section
@@ -154,7 +156,7 @@ kernel move as one matched boot+oem image, never a partial reflash.
 series honest against pristine 6.18.46; provenance is in `patches/README.md` and
 `kernel/rv1106-enablement/`.
 
-## 7. Device emulation (`qemu/`) — see ADR-0006
+## 7. Device Emulation
 
 The third simulator, deliberately not named "sim": a QEMU VM (`-M virt,highmem=off`,
 one Cortex-A7, 256M — the RV1106G3's shape) that boots the real forward-ported
@@ -178,7 +180,7 @@ development* stays `lvglsim`; the VM is where processes, the kernel, and the
 network meet. §5 still applies — no behavioural sim, this one included, catches
 memory-map faults; and "boots under emulation" is never on-silicon evidence.
 
-## 8. Order of work
+## 8. Order of Work
 
 1. **Simulator core** — `membus`, `hpmcu`, the `cru` reset ladder, `modbus`, plus the
    `rga`/`npu` models. **Done.**

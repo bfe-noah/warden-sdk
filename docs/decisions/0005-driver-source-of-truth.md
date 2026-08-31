@@ -1,4 +1,4 @@
-# ADR 0005 — Hardened drivers live in warden-sdk/drivers/
+# ADR 0005 — Driver Source of Truth
 
 **Status:** Accepted (2026-08-25).
 

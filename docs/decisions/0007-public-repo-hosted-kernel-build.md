@@ -1,4 +1,4 @@
-# ADR 0007 — Public repo: kernel-build moves to GitHub-hosted runners
+# ADR 0007 — Hosted-Only CI
 
 **Status:** Accepted (2026-08-30). Supersedes the runner half of ADR-0004.
 

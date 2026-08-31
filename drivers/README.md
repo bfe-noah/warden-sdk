@@ -1,11 +1,11 @@
-# drivers/ — our own hardened, hardware-facing drivers
+# Hardened Drivers
 
 Per **ADR-0002** (tiered MC/DC) and **ADR-0005** (source-of-truth), our own
 hardware-facing code migrates here behind a HAL seam and is hardened. "100% MC/DC on
 100% of drivers" is infeasible (≈97% of kernel-driver LOC is vendor blobs — AIC8800
 alone is 88.5K lines); the realistic, honest target is tiered.
 
-## Tier 1 — real 100% MC/DC (here now, CI-enforced)
+## Tier 1 — 100% MC/DC
 
 Self-contained logic with a clean seam, measured to **100% MC/DC** (gcc-14
 `-fcondition-coverage`) by the CI `mcdc` job (`make -C drivers/*/test check`):
@@ -23,7 +23,7 @@ build/test.rc` (it derives the driver name from the `.gcov` file, so there is no
 per-driver copy to keep in sync). The CI `mcdc` job picks up any
 `drivers/*/test/Makefile` automatically.
 
-## Tier 2 — serious testing + fault-injection + benchmarks
+## Tier 2 — Fault Injection
 
 Drivers too large or too vendor/UI-coupled for literal MC/DC get fault-injection,
 branch coverage, and benchmarks against the simulator instead. Their **hardware side

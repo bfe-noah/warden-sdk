@@ -1,4 +1,4 @@
-# HPMCU watchdog: arm → beat → fire
+# HPMCU Watchdog
 
 > **Outcome tested:** A hung A7/flared ends in a counted reset, not a dark panel.
 

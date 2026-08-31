@@ -1,4 +1,4 @@
-# RV1106 kernel patch series (pristine linux-6.18.46 → WardenOS)
+# The Kernel Patch Series
 
 The delta that forward-ports the vendor Rockchip 5.10.160 RV1106 support onto a
 pristine upstream **linux-6.18.46**, as a reviewable, subsystem-split series. Every
@@ -9,7 +9,7 @@ reproduces the 223-file / ~136K-line delta that boots and is hardware-verified o
 Build it with `../build/build-kernel.sh` (fetch pristine → apply these → configure
 with `../build/warden_defconfig` → `zImage` + `rv1106-warden.dtb`).
 
-## The series
+## The Series
 
 | Patch | Scope |
 |---|---|

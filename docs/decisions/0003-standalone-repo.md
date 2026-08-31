@@ -1,4 +1,4 @@
-# ADR 0003 — warden-sdk is a standalone repo
+# ADR 0003 — Standalone Repo
 
 **Status:** Accepted (2026-08-25). Repo-visibility half superseded by ADR-0007
 (2026-08-30) — warden-sdk went public; the "private for now" consequence below
