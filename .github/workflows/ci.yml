@@ -220,6 +220,11 @@ jobs:
           CROSS_COMPILE: arm-linux-gnueabihf-
           WARDEN_CCACHE: 1
           CCACHE_DIR: /home/runner/.ccache
+          # Matched module set for the out-of-tree wifi/BT drivers (issue #4:
+          # a stale 5.10 .ko was all the panel had). Full `make modules` runs
+          # (zImage alone emits no Module.symvers); only these dirs' .ko files
+          # are collected/uploaded.
+          WARDEN_MODULES_COLLECT: drivers/net/wireless/aic8800
         # KERNEL_TARBALL is exported from the SHELL so $HOME expands — a literal
         # `~` in a YAML env: value is never tilde-expanded and broke every
         # dispatch until caught in review.
@@ -246,6 +251,7 @@ jobs:
           path: |
             ${{ runner.temp }}/kbuild-out/linux-6.18.46/arch/arm/boot/zImage
             ${{ runner.temp }}/kbuild-out/linux-6.18.46/arch/arm/boot/dts/rockchip/rv1106-warden.dtb
+            ${{ runner.temp }}/kbuild-out/modules-out/*.ko
           # Short so kernel images self-expire instead of piling into the
           # account-wide storage quota; the prune-artifacts job above is the
           # active bound, this is the backstop.
