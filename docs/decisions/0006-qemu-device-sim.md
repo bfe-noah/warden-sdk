@@ -1,4 +1,4 @@
-# ADR 0006 — QEMU device sim: generic `-M virt`, entered at the kernel
+# ADR 0006 — QEMU Device Simulator
 
 **Status:** Accepted (2026-08-29).
 

@@ -1,4 +1,8 @@
-# Can the RV1106 NPU be used for 3D graphics or other graphical tasks?
+# NPU Graphics Feasibility
+
+> Point-in-time engineering study, written while scoping the `rknpu.ko` 6.18
+> port for the downstream WardenOS firmware — "our boards" / "this product"
+> below refer to that context. The hardware conclusions apply to any 86 Panel.
 
 **Bottom line: no, not for 3D rendering — not "slower," but genuinely not how the
 hardware works past the first pipeline stage. The RKNPU on RV1106 is a
@@ -24,9 +28,9 @@ or flagged as general knowledge / needing TRM confirmation.
 
 ---
 
-## 1. What the RV1106 NPU actually is
+## 1. What the NPU Is
 
-### Identity and generation
+### Identity and Generation
 
 - It is the **RKNPU** — Rockchip's 4th-generation NPU IP, exposed to tooling as
   the "RKNPU2" software generation (same toolchain family as RK3566/68/88), but
@@ -56,7 +60,7 @@ or flagged as general knowledge / needing TRM confirmation.
   assigns **420MHz**. No datasheet states a default/rated frequency.
   (`luckfox-pico-86-panel/npu.md:11-13`)
 
-### Architecture: fixed-function command-stream engine, not a programmable core
+### Architecture
 
 This is the load-bearing fact for everything downstream. Reading the vendored
 kernel driver source directly (`flare-edge/sdk/sysdrv/source/kernel/drivers/rknpu/`):
@@ -106,7 +110,7 @@ kernel driver source directly (`flare-edge/sdk/sysdrv/source/kernel/drivers/rknp
   primitive operations the hardware's fixed-function units implement
   underneath. It is not a route to arbitrary per-element or per-pixel code.
 
-### Data types, memory, DDR sharing
+### Data Types and Memory
 
 - **INT8-only quantization tier** for RV1106/RV1103 (`quantize=8` mandatory at
   conversion time) — inputs/outputs must be int8 and strictly 4-D.
@@ -129,7 +133,7 @@ kernel driver source directly (`flare-edge/sdk/sysdrv/source/kernel/drivers/rknp
   the 128–256MB shared-DDR budget is the practical ceiling well before compute
   is. (`luckfox-pico-86-panel/npu.md:38`)
 
-### Software stack — how it's actually driven
+### Software Stack
 
 1. **Kernel driver** (`rknpu.ko`, currently v0.9.2 on our shipped firmware) —
    exposes `/dev/rknpu` (a DRM device or a misc device, selectable at build time
@@ -159,7 +163,7 @@ footgun on this board (no regulator wired) — never poll it.
 
 ---
 
-## 2. 3D rendering feasibility, stage by stage
+## 2. 3D Rendering, Stage by Stage
 
 A conventional 3D pipeline: **vertex transform → primitive assembly →
 rasterization → depth test → texture sampling → per-pixel shading →
@@ -175,7 +179,7 @@ framebuffer write.** Verdict per stage, given everything in §1:
 | **Per-pixel shading** (arbitrary per-fragment program) | **No** | The NPU executes one fixed, precompiled graph over a whole tensor — it cannot run per-pixel conditional/arbitrary code. You could contrive a *specific* visual effect that literally is a small CNN (see §3), but that's not "shading" in the pipeline sense — it's a different, narrower thing wearing the name. |
 | **Framebuffer write** (write final pixels to the display's scanout buffer) | **No** | The NPU has no display/scanout connection at all — no DRM plane, no VOP link. Its only output path is writing tensor data to a DDR buffer, which is not a display pixel format. Something else (CPU or RGA) has to dequantize (`int8 → float → pixel`) and repack it into an actual framebuffer format before it's visible — and even RGA doesn't consume NPU tensor layouts directly (see §4). |
 
-### Verdict: full or hybrid 3D pipeline
+### Verdict
 
 **No full pipeline is possible on this hardware — five of six stages have no
 mapping at all, not a slow one.** A "hybrid" design where only vertex transform
@@ -214,7 +218,7 @@ they are the wrong tool, full stop.
 
 ---
 
-## 3. Other graphical tasks that might fit a CNN accelerator
+## 3. CNN-Shaped Image Tasks
 
 Setting 3D aside — a CNN accelerator's real strength is convolution, which
 *does* map to some classic image-processing tasks. Evaluated against this
@@ -228,7 +232,7 @@ specific 0.5–1 TOPS-class, 128–256MB-shared-DDR, no-camera product:
 | **Segmentation-driven UI effects** | Yes, in principle | **Moot — no camera, no visual input of any kind to segment.** |
 | **2D affine transforms** (rotate/scale/skew as matrix math) | Yes, technically a small matmul | **No — RGA already does this natively, in fixed-function hardware, cheaper.** RGA2-Enhance on this board already does scale (bicubic up / averaging down, to 16× either direction), rotate (90/180/270° on input windows), crop, and color/format conversion as dedicated blit-engine operations — no model compile, no INT8 quantization, no job-submit-and-IRQ-wait round trip, just a register-programmed blit. It is already wired into LVGL (the Monitor-page double-buffer-sync offload, verified 20%→8% CPU on real hardware) and proven in production. (`luckfox-pico-86-panel/rga.md`) |
 
-### A concrete, on-record precedent: this was already considered and rejected once
+### Prior Rejection
 
 The product wiki records that the keyboard's touch-bias correction (snapping an
 ambiguous tap to the nearest key) was **explicitly evaluated for NPU
@@ -241,7 +245,7 @@ problem has no business going through a tensor accelerator's compile-and-submit
 pipeline. Nothing in this research changes that conclusion — if anything it
 generalizes it.
 
-### Realistic verdict for §3
+### Realistic Verdict
 
 None of the CNN-shaped graphical tasks clear the bar for this specific product.
 Where a hardware assist genuinely helps (2D blit/scale/rotate/blend, classic
@@ -255,9 +259,9 @@ detection, touch-gesture-pattern classification) — not graphics of any kind.
 
 ---
 
-## 4. The driver-porting reality
+## 4. Driver Porting
 
-### What porting `rknpu.ko` to 6.18 actually involves
+### Porting Scope
 
 - **This is a forward-port of Rockchip's out-of-tree vendor driver, not a
   from-scratch write.** The driver already carries version-gated compatibility
@@ -299,7 +303,7 @@ detection, touch-gesture-pattern classification) — not graphics of any kind.
   driver forward against a newer kernel ABI" — bounded, evidence-backed, but
   real engineering, not a version-string bump. (`luckfox-pico-86-panel/rga.md:86`)
 
-### Does "graphics" use need the full RKNN toolchain, or is there a more direct compute submit?
+### Direct Submit Path
 
 **It needs the full toolchain.** As established in §1, the raw
 `DRM_IOCTL_RKNPU_SUBMIT` path exists at the kernel-ioctl level, but the
@@ -313,7 +317,7 @@ slower-to-iterate loop than driving RGA (which is a direct, synchronous
 `im2d`-style C API call with no offline compile step at all) or writing plain
 CPU code.
 
-### RGA is the existing, already-adequate 2D accelerator
+### RGA Comparison
 
 Worth restating plainly since it's the thing the NPU would be compared against:
 **RGA2-Enhance already does everything this panel's UI plausibly needs from 2D
@@ -332,7 +336,7 @@ silicon to work in, and it lines up with everything else in this document: RGA
 
 ---
 
-## 5. Bottom-line recommendation
+## 5. Recommendation
 
 | | Worth prototyping? | Why |
 |---|---|---|
@@ -343,7 +347,7 @@ silicon to work in, and it lines up with everything else in this document: RGA
 | **Porting `rknpu.ko` to 6.18** | **Conditionally yes — but scope it for inference, not graphics** | Same bounded, evidence-backed effort class as the RGA port; keeps the door open for the platform wiki's actual identified NPU opportunity (a small non-visual classifier: audio, RS-485/sensor anomaly detection, touch-gesture patterns). Do not justify or scope the port around a graphics capability — it doesn't unlock one. |
 | **A first NPU spike, if one is wanted for team familiarity** | **Only the already-identified real use case** | A tiny non-visual model (e.g. an RS-485 anomaly classifier) — not a graphics stunt. This is the same conclusion the platform wiki already reached independent of this research. |
 
-### What would need to happen for this document to be wrong
+### Falsifiers
 
 Flagging explicitly, per the instruction to distinguish settled facts from
 things needing verification:

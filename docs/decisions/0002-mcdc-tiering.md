@@ -1,4 +1,4 @@
-# ADR 0002 — Tiered MC/DC coverage policy
+# ADR 0002 — Tiered MC/DC
 
 **Status:** Accepted (2026-08-25).
 

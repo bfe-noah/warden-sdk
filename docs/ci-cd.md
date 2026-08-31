@@ -18,7 +18,7 @@ execute code on private infrastructure (ADR-0007).
 | `prune-artifacts` | ubuntu-latest, dispatch-only | Deletes `kernel-rv1106` artifacts beyond the newest 3. |
 | `badges` | ubuntu-latest | Renders loc/tests/coverage shields on push to `main` (`[skip ci]` + `paths-ignore` loop guard). |
 
-## History: the self-hosted runner (retired)
+## Runner History
 
 `kernel-build` originally ran on a repo-scoped self-hosted runner (ADR-0004,
 2026-08-25, verified end-to-end) because hosted minutes were metered on the

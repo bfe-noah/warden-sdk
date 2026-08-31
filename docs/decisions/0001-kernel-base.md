@@ -1,4 +1,4 @@
-# ADR 0001 — Kernel base: direct 5.10→6.18 forward-port
+# ADR 0001 — Kernel Forward-Port
 
 **Status:** Accepted (2026-08-25). Supersedes the README's original plan44/6.6 goal.
 

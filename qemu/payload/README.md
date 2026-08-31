@@ -1,6 +1,7 @@
-# qemu/payload/ — guest binaries (never committed)
+# Guest Payloads
 
-Drop **static musl armv7** binaries here; `qemu/mkimage.sh` copies everything
+Drop **static musl armv7** binaries in this directory (contents are
+gitignored — binaries are never committed); `qemu/mkimage.sh` copies everything
 in this directory (except this README) into `/usr/bin/` of both rootfs slots.
 Static musl is the same target the device uses for its Rust daemons, so the
 exact production binaries run unmodified in the VM.

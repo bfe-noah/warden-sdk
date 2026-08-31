@@ -1,4 +1,4 @@
-# ADR 0004 — CI/CD runner: 3rd repo-scoped self-hosted runner on 0640
+# ADR 0004 — Self-Hosted Runner
 
 **Status:** Superseded in part by ADR-0007 (2026-08-30) — `kernel-build` moved
 to GitHub-hosted runners for the public repo and the self-hosted registration

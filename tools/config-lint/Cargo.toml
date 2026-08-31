@@ -2,7 +2,7 @@
 name = "warden-config-lint"
 version = "0.1.0"
 edition = "2021"
-description = "Static target-config checks for WardenOS: catch memory-map faults (the 0x40000 MCU-load brick class) and other flash-time config mistakes before a flash, not on the bench."
+description = "Static target-config checks for the Luckfox Pico 86 Panel: catch memory-map faults (the 0x40000 MCU-load brick class) and other flash-time config mistakes before a flash, not on the bench."
 license = "GPL-2.0-only"
 
 [[bin]]

@@ -1,4 +1,4 @@
-# UI freshness contract (Tier-1, 100% MC/DC)
+# UI Freshness Contract
 
 > **Outcome tested:** The UI never shows a stale number: it holds briefly, then marks unknown.
 

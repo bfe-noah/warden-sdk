@@ -1,0 +1,7 @@
+    Finished `bench` profile [optimized] target(s) in 0.08s
+     Running benches/sim_bench.rs (target/release/deps/sim_bench-57835de7b7b68615)
+{"bench":"hpmcu_tick","ns_per_op":1.8,"iters":1000000}
+{"bench":"cru_poll","ns_per_op":21.4,"iters":1000000}
+{"bench":"modbus_read_holding","ns_per_op":73.7,"iters":1000000}
+{"bench":"rga_improcess","ns_per_op":6.7,"iters":1000000}
+{"bench":"membus_poke_peek","ns_per_op":27.0,"iters":1000000}

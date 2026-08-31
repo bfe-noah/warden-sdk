@@ -1,19 +1,16 @@
-# qemu/ — the WardenOS device simulator
+# The Device Simulator
 
 A QEMU virtual machine that boots the real forward-ported kernel (`build/` +
-`patches/`) and real userspace, so the *device* — init, daemons, networking,
-OTA, watchdog, display — can be tested off-hardware. The third simulator in
-the stack, deliberately not named "sim":
-
-- `lvglsim` (flare-edge) — SDL desktop build of the UI. Rendering only.
-- `sim/` (this repo) — register-level Rust models of RV1106 blocks behind
-  driver seams.
-- `qemu/` (this) — the whole machine above the kernel entry point, running
-  the real binaries.
+`patches/`) and real userspace, so the 86 Panel — init, daemons, networking,
+OTA, watchdog, display — can be developed and tested with no board attached.
+It is the third simulator in the stack (the root README's table has the
+three-way split), deliberately not named "sim": where `sim/` models
+registers, this runs the whole machine above the kernel entry point on real
+binaries — bring your own, or drop prebuilt payloads in `payload/`.
 
 Decision record: `docs/decisions/0006-qemu-device-sim.md`.
 
-## The boundary (read this before trusting a green run)
+## The Boundary
 
 There is no RV1106 machine model in QEMU and everything below the kernel is
 closed rkbin blobs plus mask ROM, so the VM **enters at `-kernel zImage`** on
@@ -43,7 +40,7 @@ Documented guest deviations from production, set by stage-2 init:
 `WARDEN_HPMCU=0` (no mailbox SRAM on virt; flared >= flare-edge#106 fix
 required, or the daemon dies of SIGBUS).
 
-## Quick start
+## Quick Start
 
 ```sh
 # 1. kernel: canonical build boots the VM as-is; the fragment variant adds
@@ -64,7 +61,7 @@ README) — `warden-flared`, `warden-modbus`, and `warden-ui` (the LVGL
 fbdev+evdev build from flare-edge `tools/build-ui-vm.sh`) are started by
 stage-2 init when present.
 
-## Scenario tests (`qemu/tests/`)
+## Scenarios
 
 - `boot-smoke.sh <zImage>` — sentinel-asserting boot; runs in CI inside the
   kernel-build job.
@@ -98,7 +95,7 @@ stage-2 init when present.
   the VM resets ~30 s later (verified). Do NOT combine with a flared payload
   expecting survival: flared pets only while the UI heartbeat is fresh.
 
-## Gotchas that cost time (so they cost it once)
+## Gotchas
 
 - AF_UNIX socket paths cap at ~108 chars — keep `--rs485`/`--qmp` paths short.
 - A serial port that is closed discards incoming bytes: hold ONE fd open
@@ -108,7 +105,7 @@ stage-2 init when present.
   which every script (boot smoke included) delegates to.
 - Never pass `earlyprintk`: DEBUG_UART_PHYS is the RV1106's 0xff4c0000.
 
-## Host requirements
+## Requirements
 
 `qemu-system-arm` (Debian 13 ships QEMU 10), `curl`, `cpio`, `mkfs.ext4`,
 `gcc-arm-linux-gnueabihf` (kernel build), `python3` (+`cryptography` for the

@@ -1,8 +1,8 @@
-# Modbus RTU: read-holding-registers round trip
+# Modbus RTU Round Trip
 
 > **Outcome tested:** A well-formed request yields the right registers; a bad one a defined fault.
 
-**Benchmark** (`modbus_read_holding`): 88.0 ns/op
+**Benchmark** (`modbus_read_holding`): 73.7 ns/op
 
 ```mermaid
 flowchart TD

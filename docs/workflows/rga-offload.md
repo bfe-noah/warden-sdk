@@ -1,8 +1,8 @@
-# RGA 2D offload dispatch
+# RGA Offload
 
 > **Outcome tested:** Blits go to the RGA when it succeeds, and fall back to the CPU when it doesn't.
 
-**Benchmark** (`rga_improcess`): 7.2 ns/op
+**Benchmark** (`rga_improcess`): 6.7 ns/op
 
 ```mermaid
 flowchart TD
