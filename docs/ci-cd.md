@@ -14,6 +14,7 @@ execute code on private infrastructure (ADR-0007).
 | `bench` | ubuntu-latest | Smoke-runs the sim + rs485-bridge micro-benchmarks; emits ns/op trend JSON. |
 | `patches-apply` | ubuntu-latest | Fetches pristine linux-6.18.46 (cached, sha256-verified) and applies `patches/*` in order. |
 | `qemu-tools` | ubuntu-latest | shellcheck on `qemu/**.sh`; builds the initramfs (pinned busybox) and the A/B disk image. |
+| `quality` | ubuntu-latest | Codacy-style grade computed in-pipeline: clippy, cppcheck, shellcheck, ruff, lizard, jscpd, cargo-audit feed `tools/quality/score.py` (SQALE debt ratio + a separate worst-of security axis; SonarQube's published thresholds). Uploads `quality.json`; fails if the security grade is worse than C. |
 | `kernel-build` | ubuntu-latest, **dispatch-only** | apt-installs the cross toolchain + qemu, `build/build-kernel.sh` -> `zImage` + `rv1106-warden.dtb`, QEMU `-M virt` boot smoke (fail-closed), artifact upload (best-effort). Trigger: `gh workflow run ci.yml`. |
 | `prune-artifacts` | ubuntu-latest, dispatch-only | Deletes `kernel-rv1106` artifacts beyond the newest 3. |
 | `badges` | ubuntu-latest | Renders loc/tests/coverage shields on push to `main` (`[skip ci]` + `paths-ignore` loop guard). |
@@ -28,5 +29,8 @@ deployment log, not here.
 
 ## Badges
 
-Static shields SVGs are committed by the `badges` job. The GitHub-native
-`ci.yml` status badge works live regardless.
+SVGs are rendered in-runner with anybadge and committed by the `badges`
+job: no external badge or assessment service at render or view time. The
+quality letter comes from the `quality` job; `tools/quality/score.py`
+documents the scoring model and thresholds. The GitHub-native `ci.yml`
+status badge works live regardless.
