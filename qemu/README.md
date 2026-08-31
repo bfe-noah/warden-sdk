@@ -1,14 +1,11 @@
 # The Device Simulator
 
-A QEMU virtual machine that boots the real forward-ported kernel (`build/` +
-`patches/`) and real userspace, so the 86 Panel — init, daemons, networking,
-OTA, watchdog, display — can be developed and tested with no board attached.
-It is the third simulator in the stack (the root README's table has the
-three-way split), deliberately not named "sim": where `sim/` models
-registers, this runs the whole machine above the kernel entry point on real
-binaries — bring your own, or drop prebuilt payloads in `payload/`.
-
-Decision record: `docs/decisions/0006-qemu-device-sim.md`.
+A QEMU virtual machine that boots the real forward-ported kernel and real
+userspace: the 86 Panel — init, daemons, networking, OTA, watchdog, display —
+developed and tested with no board attached. The third simulator in the stack
+(three-way split: root README), deliberately not named "sim": it runs the
+whole machine above the kernel entry point on real binaries — bring your own,
+or drop prebuilt payloads in `payload/`. Decision record: ADR-0006.
 
 ## The Boundary
 
@@ -63,37 +60,27 @@ stage-2 init when present.
 
 ## Scenarios
 
-- `boot-smoke.sh <zImage>` — sentinel-asserting boot; runs in CI inside the
-  kernel-build job.
-- `portal-scenario.sh <zImage>` (needs `FLARE_EDGE=<checkout>`) — the real
-  flared in the VM against the desk mock portal: authenticated check-in,
-  firmware desired-state pull, and download of a real signed tier-1 `.wfw`
-  offer. Verify/stage/APPLYING run as a dry run (no `WARDEN_FW_ALLOW_APPLY`);
-  flipping it on inside the VM is the documented stretch — apply writes
-  `/dev/block/by-name/rootfs_b` inside disk.img, then `--slot _b` boots it.
-- `ui-shot.sh <zImage>` — display+touch: boots headless with virtio-gpu,
-  QMP-screendumps the 720x720 UI, taps the Metrics tab via `input-send-event`
-  (a 200 ms hold — an instantaneous press+release lands inside one LVGL poll
-  and never clicks), and asserts the frame changed. `qmp.py` is the tiny QMP
-  client.
-- `ota-apply.sh <zImage>` (needs `FLARE_EDGE`) — the FULL apply loop the
-  portal scenario stops short of: a real signed tier-1 `.wfw` whose payload
-  is a bootable rootfs is pulled, verified, WRITTEN to rootfs_b
-  (`run.sh --allow-apply` gates it per boot), the AvbABData in `misc` is
-  flipped (mkimage provisions real A/B metadata), and the harness reboots
-  slot `_b` and asserts the applied version is running. The BCB slot CHOICE
-  and the physical reset stay emulated by the harness (ADR-0006 boundary);
-  the VM exports `WARDEN_HARD_RESET=0` so flared's post-apply reset surfaces
-  as a clean reported error instead of a /dev/mem fault.
-- `real-image-boot.sh <zImage> <rootfs.img> <oem.img>` — the real-image
-  milestone: an ACTUAL flare-edge build (matched pair, placed by
-  `mkimage.sh --rootfs-image/--oem-image`) boots through its own init chain
-  to a getty on the VM console; real daemons start. RV1106-only init steps
-  degrade as documented, and binaries predating known fixes reproduce their
-  bugs faithfully (a feature: the VM is a time machine for field issues).
-- Watchdog: `run.sh --watchdog`, arm `/dev/watchdog` in the guest, don't pet —
-  the VM resets ~30 s later (verified). Do NOT combine with a flared payload
-  expecting survival: flared pets only while the UI heartbeat is fresh.
+All take the virt-fragment `<zImage>`; `FLARE_EDGE=<checkout>` where noted.
+
+| Scenario | Needs | Proves |
+|---|---|---|
+| `boot-smoke.sh` | — | sentinel-asserting boot; runs in CI inside kernel-build |
+| `portal-scenario.sh` | `FLARE_EDGE` | real flared against the desk mock portal: authenticated check-in, desired-state pull, signed tier-1 `.wfw` download; verify/stage/APPLYING as a dry run (no `WARDEN_FW_ALLOW_APPLY`) |
+| `ota-apply.sh` | `FLARE_EDGE` | the FULL apply: the `.wfw`'s bootable rootfs payload is written to rootfs_b (`run.sh --allow-apply` gates it per boot), the AvbABData in `misc` flips, and slot `_b` boots the applied version |
+| `ui-shot.sh` | — | display+touch, headless: QMP-screendumps the 720x720 UI, taps the Metrics tab via `input-send-event`, asserts the frame changed (`qmp.py` is the QMP client) |
+| `real-image-boot.sh` | matched `rootfs.img` + `oem.img` | an ACTUAL flare-edge build (placed by `mkimage.sh --rootfs-image/--oem-image`) boots its own init chain to getty; binaries predating known fixes reproduce their bugs faithfully — a time machine for field issues |
+| watchdog (`run.sh --watchdog`) | — | arm `/dev/watchdog`, don't pet: the VM resets ~30 s later (verified) |
+
+Scenario fine print:
+
+- OTA: the BCB slot CHOICE and the physical reset stay emulated by the
+  harness (ADR-0006 boundary); the VM exports `WARDEN_HARD_RESET=0` so
+  flared's post-apply reset surfaces as a reported error, not a /dev/mem
+  fault.
+- Touch injection holds 200 ms — an instantaneous press+release lands inside
+  one LVGL poll and never clicks.
+- Watchdog + a flared payload don't mix: flared pets only while the UI
+  heartbeat is fresh.
 
 ## Gotchas
 

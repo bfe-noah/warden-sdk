@@ -31,8 +31,7 @@ with `../build/warden_defconfig` → `zImage` + `rv1106-warden.dtb`).
 
 Everything in this directory is a derivative work of the Linux kernel and of
 GPL-2.0 vendor kernel code: **GPL-2.0-only** (or the per-file SPDX identifier
-where one is present), the same license the whole repository carries. Per-driver
-origin and license are tracked in `kernel/rv1106-enablement/PROVENANCE.md`.
+where one is present), the same license the whole repository carries.
 
 ## Provenance & regeneration
 
