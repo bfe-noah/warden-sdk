@@ -17,12 +17,37 @@
 
 	chosen {
 		stdout-path = "serial2:115200n8";
-		bootargs = "earlycon=uart8250,mmio32,0xff4c0000 console=ttyS2,115200n8 earlyprintk rootwait";
+		/* earlyprintk removed 2026-09-01: with earlycon AND earlyprintk both
+		 * on, every printk went out the 115200 UART twice -- console writes
+		 * are synchronous, so the duplication was seconds of wall time over
+		 * a full boot log. earlycon stays for pre-console visibility. */
+		bootargs = "earlycon=uart8250,mmio32,0xff4c0000 console=ttyS2,115200n8 rootwait";
 	};
 
 	memory@0 {
 		device_type = "memory";
 		reg = <0x00000000 0x10000000>; /* 256 MiB */
+	};
+
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		/*
+		 * Boot-logo framebuffer handoff. U-Boot's board_fdt_fixup
+		 * (rockchip_display.c) looks for a /reserved-memory child with
+		 * this compatible and stamps the address/size of the
+		 * framebuffer it drew the logo into; the zero reg here is the
+		 * unfixed placeholder. With the region reserved, the kernel
+		 * never scribbles on the logo, and the VOP driver's seamless
+		 * takeover (rockchip_drm_vop.c vop_initial) keeps scanning it
+		 * until the first real modeset -- the userspace splash.
+		 */
+		drm_logo: drm-logo@0 {
+			compatible = "rockchip,drm-logo";
+			reg = <0x0 0x0>;
+		};
 	};
 
 	/* --- M5: AIC8800DC wifi/BT power sequencing --- */
