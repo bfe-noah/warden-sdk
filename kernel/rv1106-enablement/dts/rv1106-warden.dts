@@ -3,11 +3,12 @@
  * WardenOS 86-Panel board DT for the self-built Linux 6.18 forward-port.
  *
  * Includes the full vendor rv1106.dtsi (SoC nodes + pinctrl + gpio + dmac), then
- * enables only what our wall-HMI needs: no camera/ISP/CSI. Grows one driver
+ * enables only what our wall-HMI needs — no camera/ISP/CSI. Grows one driver
  * batch at a time toward full parity with the 5.10 kernel (DRIVER-PARITY.md).
  */
 /dts-v1/;
 
+#include <dt-bindings/display/media-bus-format.h>
 #include "rv1106.dtsi"
 
 / {
@@ -31,7 +32,7 @@
 		reset-gpios = <&gpio1 RK_PA2 GPIO_ACTIVE_LOW>;
 	};
 
-	/* SARADC voltage reference (1.8V): the driver reads this for scale;
+	/* SARADC voltage reference (1.8V) — the driver reads this for scale;
 	   without it saradc probes -22 (regulator_get_voltage on the dummy). */
 	vcc_1v8: vcc-1v8 {
 		compatible = "regulator-fixed";
@@ -57,7 +58,7 @@
 	status = "okay";
 };
 
-/* --- M5: AIC8800DC wifi/BT SDIO (on &sdmmc, mmc@ffaa0000; NOT &sdio) --- */
+/* --- M5: AIC8800DC wifi/BT SDIO (on &sdmmc, mmc@ffaa0000 — NOT &sdio) --- */
 &sdmmc {
 	max-frequency = <50000000>;
 	bus-width = <4>;
@@ -82,8 +83,38 @@
 	status = "okay";
 };
 
+/* --- GT911 capacitive touch on i2c3 (86-Panel HMI) ---
+ * The stock rootfs ships a goodix.ko built for the 5.10 kernel; it cannot load
+ * on our 6.18 (`struct module` size mismatch) so touch was dead on _b. Build
+ * CONFIG_TOUCHSCREEN_GOODIX=y instead (in the config fragment) and describe the
+ * GT911 here, matching the vendor 86-panel wiring: addr 0x14, IRQ GPIO0_A0
+ * (edge-falling), reset GPIO3_D0 (active-low). reset-gpios + irq-gpios let the
+ * mainline goodix driver run the GT911 power-on/address-select sequence. */
 &i2c3 {
 	status = "okay";
+	clock-frequency = <100000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c3m2_xfer &tp_rst &tp_irq>;
+
+	touchscreen@14 {
+		compatible = "goodix,gt911";
+		reg = <0x14>;
+		interrupt-parent = <&gpio0>;
+		interrupts = <RK_PA0 IRQ_TYPE_EDGE_FALLING>;
+		irq-gpios = <&gpio0 RK_PA0 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio3 RK_PD0 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&pinctrl {
+	touch {
+		tp_rst: tp-rst {
+			rockchip,pins = <3 RK_PD0 RK_FUNC_GPIO &pcfg_pull_up>;
+		};
+		tp_irq: tp-irq {
+			rockchip,pins = <0 RK_PA0 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
 };
 
 &saradc {
@@ -95,7 +126,7 @@
 	status = "okay";
 };
 
-/* --- M4: display (VOP + RGB -> 720x720 panel + PWM backlight) --- */
+/* --- M4: display (VOP + RGB → 720x720 panel + PWM backlight) --- */
 &display_subsystem {
 	status = "okay";
 };
@@ -106,6 +137,17 @@
 	 * vendor node omits; without them vop_bind fails "failed to get ahb reset". */
 	resets = <&cru SRST_H_VOP>, <&cru SRST_D_VOP>;
 	reset-names = "ahb", "dclk";
+	/*
+	 * The 18-bit parallel RGB output (lcd_clk + lcd_d0..d17 + den/hsync/vsync,
+	 * 22 pins) must be muxed to the VOP's LCDC function or NO pixel data reaches
+	 * the panel -> backlit-black even with a fully healthy DRM pipeline. The
+	 * vendor board carried this mux as pinctrl-0 = <&lcd_pins> ON THE &rgb node;
+	 * we deleted &rgb (dangling-endpoint graph cycle), which silently dropped it.
+	 * Re-attach it here: the driver core auto-applies the "default" pinctrl state
+	 * when the VOP probes, exactly like the pwm1 backlight pin. Same root cause
+	 * as the dark backlight -- an unmuxed output pin group. */
+	pinctrl-names = "default";
+	pinctrl-0 = <&lcd_pins>;
 };
 
 /* mainline wires vop_out straight to the panel (no separate rgb node) */
@@ -115,9 +157,24 @@
 
 &pwm1 {
 	status = "okay";
-	pinctrl-names = "active";
+	/* mainline pwm-rockchip does NOT pinctrl_select_state("active") the way
+	 * the vendor 5.10 driver did; it relies on the pinctrl core auto-applying
+	 * the "default" state at probe. With "active" the pin never gets muxed to
+	 * PWM, so the backlight stays dark. Use "default". */
+	pinctrl-names = "default";
 	pinctrl-0 = <&pwm1m2_pins>;
 };
+
+/*
+ * NOTE on the RGB panel init MCU (WCH CH32V003, U6, net RGB_RES = GPIO0_A1):
+ * the panel controller is configured by that MCU's SPI init sequence, released
+ * once by U-Boot board_init() (stock boot). The WardenOS *userspace* (identical
+ * rootfs on _a and _b) also drives GPIO0_A1 as part of the panel bring-up, and
+ * on stock 5.10 (_a) the panel comes up fine that way. A kernel gpio-hog here
+ * FIGHTS that userspace management (two owners on the same line) and left the
+ * panel black on _b, so it is deliberately NOT hogged — matching _a, where only
+ * userspace touches the line.
+ */
 
 / {
 	backlight: backlight {
@@ -131,6 +188,24 @@
 	panel: panel {
 		compatible = "panel-dpi";
 		backlight = <&backlight>;
+		/* the 86-Panel is an 18-bit parallel RGB (RGB666) panel; without a
+		 * bus-format the RGB output width is unset and the screen stays
+		 * black. Read by our panel-dpi patch (upstream ignores it). */
+		bus-format = <MEDIA_BUS_FMT_RGB666_1X18>;
+		/*
+		 * Deliberately NO reset-gpios / reset-delay-ms on this node.
+		 * RGB_RES (GPIO0_A1) resets the CH32V003 init MCU, which is
+		 * released exactly once, early, by U-Boot board_init() (shared
+		 * across A/B slots) so the MCU SPI-inits the NV3052 panel
+		 * controller before Linux. Handing reset-gpios to panel-simple
+		 * makes drm_panel_prepare() REBOOT the MCU while the VOP is
+		 * scanning out -- Luckfox deleted these two properties upstream
+		 * for exactly this reason (commit e2b0ffa22), and the flare-edge
+		 * 5.10 board DTS documents them as "the fix", not a regression.
+		 * Verified black-screen root cause was the VOP dclk polarity, not
+		 * this line (see rockchip_drm_vop.c rgb_dclk_pol). backlight stays
+		 * (U-Boot rockchip_panel.c reads its handle from this node).
+		 */
 		width-mm = <85>;
 		height-mm = <85>;
 
@@ -158,11 +233,12 @@
 	};
 };
 
-/* the vendor rgb bridge node has no 6.18 driver and its dangling endpoint
- * corrupts the vop->panel of_graph; disable it so the graph is clean. */
-&rgb {
-	status = "disabled";
-};
+/* The vendor rgb bridge node has no 6.18 driver and its dangling endpoint
+ * (rgb_in_vop -> vop_out_rgb) leaves a stray graph link that fw_devlink reads
+ * as a vop<->panel dependency cycle, so the VOP probes before the panel and the
+ * RGB connector is never created. DELETE it outright (disabling still left the
+ * endpoint in the graph) so vop_out_rgb <-> panel_in_vop is the only link. */
+/delete-node/ &rgb;
 
 /* --- sweep: USB OTG (eth0 gadget / host) via the ported inno-usb2 phy --- */
 &u2phy {
@@ -180,6 +256,13 @@
 &usbdrd_dwc3 {
 	status = "okay";
 	dr_mode = "otg";
+	/* NO extcon, deliberately (tried 2026-09-01, reverted same day): our
+	 * bench/router panels self-source VBUS on this port (D1 mod), so the
+	 * phy's bvalid is always high and extcon pins the role to peripheral --
+	 * the plugged USB NIC then never enumerates and debugfs "mode" writes
+	 * are overridden. Without extcon, otg defaults to host and the role is
+	 * switched at runtime per device role (router=host, client=gadget) via
+	 * /sys/kernel/debug/usb/ffb00000.usb/mode -- S26usbhost's 6.18 path. */
 };
 
 /* --- sweep: RTC + thermal (tsadc) + I2S audio DAI --- */
